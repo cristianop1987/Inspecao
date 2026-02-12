@@ -107,16 +107,18 @@
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     const cb = Math.round(new Date().getTime() / 1000);
     
-    // Parâmetros para forçar o layout exato do PC no celular
     const params = [
         'format=pdf',
         'size=A4',
-        'portrait=false',        // Paisagem
-        'fitw=true',            // Ajustar largura
-        'gridlines=false',      // Remove linhas de grade para parecer formulário
+        'portrait=false',         // Modo Paisagem
+        'fitw=true',             // Ajusta largura para não cortar
+        'gridlines=false',       // Remove as linhas de grade cinzas
+        'headers=false',         // REMOVE AS LETRAS (A,B,C) E NÚMEROS (1,2,3)
         'gid=' + gid,
-        'r1=0', 'c1=0',         // Começa na célula A1 (linha 0, coluna 0)
-        'r2=30', 'c2=8',        // Vai até a linha 30 e coluna H (coluna 8) para pegar o rodapé
+        'r1=0', 'c1=0',          // Início na célula A1
+        'r2=32', 'c2=16',        // Vai até a linha 32 e coluna P para pegar tudo
+        'pagenumbers=false',     // Remove numeração de página automática
+        'printtitle=false',      // Remove títulos extras
         'cachebuster=' + cb
     ].join('&');
 
@@ -127,6 +129,7 @@
 
 </body>
 </html>
+
 
 
 
