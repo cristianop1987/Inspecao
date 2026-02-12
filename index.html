@@ -103,13 +103,31 @@
     }
 
     function abrirPDF() {
-        const gid = '1495736702';
-        const cb = Math.round(new Date().getTime() / 1000);
-        const pdfUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?format=pdf&gid=${gid}&size=A4&portrait=false&fitw=true&gridlines=true&cachebuster=${cb}`;
-        window.open(pdfUrl, '_blank');
-    }
+    const gid = '1495736702'; // ID da sua aba específica
+    const cb = Math.round(new Date().getTime() / 1000); // Evita cache
+    
+    // Parâmetros de configuração para o PDF sair perfeito:
+    const params = [
+        'format=pdf',               // Formato de exportação
+        'size=A4',                  // Tamanho do papel
+        'portrait=false',            // false = PAISAGEM (ideal para seu formulário)
+        'fitw=true',                // Ajustar largura à página
+        'source=lab',               // Fonte
+        'gridlines=true',           // Mostrar linhas de grade
+        'printtitle=false',         // Não repetir título da planilha
+        'sheetnames=false',         // Não mostrar nome da aba
+        'fzr=false',                // Não repetir linhas congeladas
+        'gid=' + gid,               // ID da aba correta
+        'cachebuster=' + cb         // Garante dados atualizados
+    ].join('&');
+
+    const pdfUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?${params}`;
+    
+    window.open(pdfUrl, '_blank');
+}
 </script>
 
 </body>
 </html>
+
 
