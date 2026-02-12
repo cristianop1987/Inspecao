@@ -6,23 +6,18 @@
     <title>Scanner F-CGO-004</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 15px; background-color: #f0f2f5; color: #333; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 15px; background-color: #f0f2f5; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
         h2 { color: #003399; margin-bottom: 5px; }
-        
-        /* Estilo do Contador e Barra */
         .count-box { background: #eef2ff; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #d1d9e6; }
         .progress-container { background-color: #ddd; border-radius: 10px; height: 10px; width: 100%; margin-top: 8px; overflow: hidden; }
         .progress-bar { height: 100%; width: 0%; background-color: #28a745; transition: width 0.3s; }
-
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        #reader { width: 100%; border-radius: 12px; margin-top: 10px; background: #000; overflow: hidden; }
-        
-        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        #reader { width: 100%; border-radius: 12px; margin-top: 10px; background: #000; }
+        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; }
         .btn-camera { background-color: #003399; color: white; }
         .btn-pdf { background-color: #d9534f; color: white; }
         .btn-limpar { background-color: #f0ad4e; color: white; }
-        
         #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
     </style>
 </head>
@@ -30,23 +25,20 @@
 
 <div class="card">
     <h2>Scanner Azul Cargo</h2>
-    <p style="font-size: 12px; margin-bottom: 15px;">Formulário F-CGO-004</p>
+    <p style="font-size: 12px; margin-bottom: 15px;">F-CGO-004 - Inspecção de Carga</p>
 
     <div class="count-box">
-        <strong>Itens na Planilha:</strong> <span id="contagem">0</span> / 21
-        <div class="progress-container">
-            <div id="barra" class="progress-bar"></div>
-        </div>
+        <strong>Itens Bipados:</strong> <span id="contagem">0</span> / 21
+        <div class="progress-container"><div id="barra" class="progress-bar"></div></div>
     </div>
 
-    <input type="text" id="nome" placeholder="Vistoriado por (Nome)">
+    <input type="text" id="nome" placeholder="Nome do Vistoriador">
     <input type="text" id="re" placeholder="RE">
     
     <div id="reader"></div>
     <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LIGAR CÂMERA</button>
     
     <div id="status"></div>
-
     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
     
     <button class="btn-pdf" onclick="abrirPDF()">VISUALIZAR PDF</button>
@@ -54,8 +46,7 @@
 </div>
 
 <script>
-    // --- CONFIGURAÇÕES ---
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbx-mNB6oMV7JtiDybRq5fINNv9Tq19xtPK4GvOhHuReoOs78aZrJwfhyu7mDoucJHXwIQ/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyR1izxPYqCC7bo3-jI0tBTzK69dvoBViIkWXs_AKjqkYqnF1VIFQIp-e4QUkeUbgzf0g/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
@@ -63,8 +54,7 @@
     function toggleCamera() {
         if (!cameraAtiva) {
             if(!document.getElementById('nome').value || !document.getElementById('re').value) {
-                alert("Por favor, preencha Nome e RE antes de começar.");
-                return;
+                alert("Preencha Nome e RE!"); return;
             }
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess)
@@ -86,7 +76,6 @@
 
     function onScanSuccess(decodedText) {
         pararCamera();
-        
         let cteMatch = decodedText.match(/577(\d{8})/);
         let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})\|(\d+)\|/);
         
@@ -94,36 +83,25 @@
         let destino = rotaMatch ? rotaMatch[1] : "N/I";
         let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
 
-        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantidade Inspecionada:`, "1");
-
+        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantos volumes inspeccionados?`, "1");
         if (qtdInspec === null) return;
 
-        document.getElementById('status').style.color = "blue";
-        document.getElementById('status').innerText = "Enviando dados...";
+        document.getElementById('status').innerText = "Enviando...";
 
         const dados = {
             data: new Date().toLocaleDateString('pt-BR'),
-            cte: cte,
-            destino: destino,
-            qtdTotal: qtdTotal,
-            qtdInspec: qtdInspec,
-            nome: document.getElementById('nome').value,
-            re: document.getElementById('re').value
+            cte: cte, destino: destino, qtdTotal: qtdTotal, qtdInspec: qtdInspec,
+            nome: document.getElementById('nome').value, re: document.getElementById('re').value
         };
 
         fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
         .then(response => response.text())
         .then(resultado => {
-            if(resultado === "CHEIA") {
-                alert("⚠️ A planilha atingiu o limite de 21 linhas!");
-            } else {
+            if(resultado === "CHEIA") alert("Planilha Cheia!");
+            else {
                 atualizarContador(resultado);
-                document.getElementById('status').style.color = "green";
-                document.getElementById('status').innerText = "✅ Sucesso! Item " + resultado + "/21";
+                document.getElementById('status').innerText = "✅ Sucesso (" + resultado + "/21)";
             }
-        })
-        .catch(err => {
-            alert("Erro na rede. Verifique se o Script está como 'Qualquer Pessoa'.");
         });
     }
 
@@ -133,20 +111,18 @@
         const porcentagem = (n / 21) * 100;
         const barra = document.getElementById('barra');
         barra.style.width = porcentagem + "%";
-        
-        if(n >= 18) barra.style.backgroundColor = "#d9534f";
-        else if(n >= 10) barra.style.backgroundColor = "#f0ad4e";
-        else barra.style.backgroundColor = "#28a745";
+        barra.style.backgroundColor = n >= 18 ? "#d9534f" : (n >= 10 ? "#f0ad4e" : "#28a745");
     }
 
     function confirmarLimpeza() {
-        if (confirm("Deseja realmente LIMPAR a planilha? Todos os dados serão apagados.")) {
-            document.getElementById('status').innerText = "Limpando...";
-            fetch(scriptURL + '?action=limpar')
+        if (confirm("Deseja realmente LIMPAR a planilha?")) {
+            const status = document.getElementById('status');
+            status.innerText = "Limpando...";
+            fetch(scriptURL + '?action=limpar', { mode: 'no-cors' })
             .then(() => {
                 atualizarContador(0);
-                alert("Planilha limpa!");
-                document.getElementById('status').innerText = "";
+                status.innerText = "✅ Planilha Limpa!";
+                setTimeout(() => { status.innerText = ""; }, 2000);
             });
         }
     }
@@ -159,11 +135,8 @@
             'gridlines=false', 'headers=false', 'gid=' + gid,
             'r1=0', 'c1=0', 'r2=32', 'c2=12', 'cachebuster=' + cb
         ].join('&');
-
         window.open(`https://docs.google.com/spreadsheets/d/${sheetID}/export?${params}`, '_blank');
     }
 </script>
-
 </body>
 </html>
-
