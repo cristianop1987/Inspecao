@@ -6,20 +6,39 @@
     <title>Scanner F-CGO-004</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 15px; background-color: #f4f4f9; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        #reader { width: 100%; border-radius: 10px; margin-top: 10px; background: #000; }
-        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 15px; background-color: #f0f2f5; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
+        h2 { color: #003399; margin-bottom: 5px; }
+        
+        /* Estilo do Contador e Barra */
+        .count-box { background: #eef2ff; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #d1d9e6; }
+        .progress-container { background-color: #ddd; border-radius: 10px; height: 10px; width: 100%; margin-top: 8px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; background-color: #28a745; transition: width 0.3s; }
+
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        #reader { width: 100%; border-radius: 12px; margin-top: 10px; background: #000; overflow: hidden; }
+        
+        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
         .btn-camera { background-color: #003399; color: white; }
-        .btn-pdf { background-color: #d9534f; color: white; margin-top: 20px; }
-        #status { margin-top: 15px; font-weight: bold; }
+        .btn-pdf { background-color: #d9534f; color: white; }
+        .btn-limpar { background-color: #f0ad4e; color: white; }
+        
+        #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>Scanner Azul Cargo</h2>
+    <p style="font-size: 12px; margin-bottom: 15px;">Formulário F-CGO-004</p>
+
+    <div class="count-box">
+        <strong>Itens na Planilha:</strong> <span id="contagem">0</span> / 21
+        <div class="progress-container">
+            <div id="barra" class="progress-bar"></div>
+        </div>
+    </div>
+
     <input type="text" id="nome" placeholder="Vistoriado por (Nome)">
     <input type="text" id="re" placeholder="RE">
     
@@ -27,11 +46,16 @@
     <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LIGAR CÂMERA</button>
     
     <div id="status"></div>
-    <button class="btn-pdf" onclick="abrirPDF()">VISUALIZAR PLANILHA (PDF)</button>
+
+    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+    
+    <button class="btn-pdf" onclick="abrirPDF()">VISUALIZAR PDF</button>
+    <button class="btn-limpar" onclick="confirmarLimpeza()">LIMPAR PLANILHA</button>
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwNsPamdZshJ_TjBA7cZnH5WdR_Zx0_KZBCNzzovSK9rof8-L5TcUi_ElKOsmRODlPO6g/exec'; 
+    // --- CONFIGURAÇÕES ---
+    const scriptURL = 'https://script.google.com/macros/s/AKfycby8K351qXjgHEbCEhvxD0HoYM7EVMS-Vq4zhB_zysAs6vHh3KANKaVlW-DS7lfHmy0NOw/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
@@ -39,7 +63,8 @@
     function toggleCamera() {
         if (!cameraAtiva) {
             if(!document.getElementById('nome').value || !document.getElementById('re').value) {
-                alert("Preencha seu Nome e RE primeiro!"); return;
+                alert("Por favor, preencha Nome e RE antes de começar.");
+                return;
             }
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess)
@@ -62,7 +87,6 @@
     function onScanSuccess(decodedText) {
         pararCamera();
         
-        // Extração dos dados do QR Code
         let cteMatch = decodedText.match(/577(\d{8})/);
         let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})\|(\d+)\|/);
         
@@ -70,16 +94,12 @@
         let destino = rotaMatch ? rotaMatch[1] : "N/I";
         let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
 
-        // PERGUNTA A QUANTIDADE APÓS BIPAR
-        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes na carga: ${qtdTotal}\n\nQuantos volumes você inspecionou?`, "1");
+        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantidade Inspecionada:`, "1");
 
-        if (qtdInspec === null) {
-            document.getElementById('status').innerText = "Envio cancelado.";
-            return;
-        }
+        if (qtdInspec === null) return;
 
         document.getElementById('status').style.color = "blue";
-        document.getElementById('status').innerText = "Enviando para planilha...";
+        document.getElementById('status').innerText = "Enviando dados...";
 
         const dados = {
             data: new Date().toLocaleDateString('pt-BR'),
@@ -91,48 +111,58 @@
             re: document.getElementById('re').value
         };
 
-        fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) })
-        .then(() => {
-            document.getElementById('status').style.color = "green";
-            document.getElementById('status').innerText = `✅ Enviado: CTE ${dados.cte}`;
+        fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
+        .then(response => response.text())
+        .then(resultado => {
+            if(resultado === "CHEIA") {
+                alert("⚠️ A planilha atingiu o limite de 21 linhas!");
+            } else {
+                atualizarContador(resultado);
+                document.getElementById('status').style.color = "green";
+                document.getElementById('status').innerText = "✅ Sucesso! Item " + resultado + "/21";
+            }
         })
         .catch(err => {
-            document.getElementById('status').style.color = "red";
-            document.getElementById('status').innerText = "Erro no envio!";
+            alert("Erro na rede. Verifique se o Script está como 'Qualquer Pessoa'.");
         });
     }
 
-    function abrirPDF() {
-    const gid = '1495736702';
-    const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
-    const cb = Math.round(new Date().getTime() / 1000);
-    
-    const params = [
-        'format=pdf',
-        'size=A4',
-        'portrait=false',         // Modo Paisagem
-        'fitw=true',             // Ajusta largura para não cortar
-        'gridlines=false',       // Remove as linhas de grade cinzas
-        'headers=false',         // REMOVE AS LETRAS (A,B,C) E NÚMEROS (1,2,3)
-        'gid=' + gid,
-        'r1=0', 'c1=0',          // Início na célula A1
-        'r2=32', 'c2=16',        // Vai até a linha 32 e coluna P para pegar tudo
-        'pagenumbers=false',     // Remove numeração de página automática
-        'printtitle=false',      // Remove títulos extras
-        'cachebuster=' + cb
-    ].join('&');
+    function atualizarContador(valor) {
+        const n = parseInt(valor);
+        document.getElementById('contagem').innerText = n;
+        const porcentagem = (n / 21) * 100;
+        const barra = document.getElementById('barra');
+        barra.style.width = porcentagem + "%";
+        
+        if(n >= 18) barra.style.backgroundColor = "#d9534f";
+        else if(n >= 10) barra.style.backgroundColor = "#f0ad4e";
+        else barra.style.backgroundColor = "#28a745";
+    }
 
-    const pdfUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?${params}`;
-    window.open(pdfUrl, '_blank');
-}
+    function confirmarLimpeza() {
+        if (confirm("Deseja realmente LIMPAR a planilha? Todos os dados serão apagados.")) {
+            document.getElementById('status').innerText = "Limpando...";
+            fetch(scriptURL + '?action=limpar')
+            .then(() => {
+                atualizarContador(0);
+                alert("Planilha limpa!");
+                document.getElementById('status').innerText = "";
+            });
+        }
+    }
+
+    function abrirPDF() {
+        const gid = '1495736702';
+        const cb = Math.round(new Date().getTime() / 1000);
+        const params = [
+            'format=pdf', 'size=A4', 'portrait=false', 'fitw=true',
+            'gridlines=false', 'headers=false', 'gid=' + gid,
+            'r1=0', 'c1=0', 'r2=32', 'c2=12', 'cachebuster=' + cb
+        ].join('&');
+
+        window.open(`https://docs.google.com/spreadsheets/d/${sheetID}/export?${params}`, '_blank');
+    }
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
