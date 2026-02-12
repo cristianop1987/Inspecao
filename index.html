@@ -3,62 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitor Azul Cargo</title>
+    <title>Scanner Azul Cargo</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; text-align: center; background-color: #f4f4f9; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input { width: 90%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-top: 20px; background: #eee; }
-        button { background-color: #0056b3; color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px; }
-        .status { color: #28a745; font-weight: bold; margin-top: 15px; min-height: 20px; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #f0f2f5; margin: 0; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: #003399; text-align: center; margin-top: 0; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
+        button { width: 100%; padding: 15px; background-color: #003399; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:active { background-color: #002266; }
+        #status { margin-top: 15px; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Check-in de Carga</h2>
-    <input type="text" id="nome" placeholder="Seu Nome">
-    <input type="text" id="re" placeholder="Seu RE">
+<div class="card">
+    <h2>Check-in Azul Cargo</h2>
     
-    <div id="reader" style="width: 300px; margin: auto;"></div>
+    <input type="text" id="nome" placeholder="Vistoriado por (Nome)" onchange="salvarDados()">
+    <input type="text" id="re" placeholder="RE" onchange="salvarDados()">
     
-    <button onclick="iniciarCamera()" style="padding: 15px; width: 100%; margin-top: 10px;">
-        LIGAR CÂMERA
-    </button>
+    <div id="reader"></div>
+    <button id="btnStart" onclick="iniciarCamera()">LIGAR CÂMERA</button>
     
-    <div id="status" class="status"></div>
+    <div id="status"></div>
 </div>
 
 <script>
+    // --- CONFIGURAÇÃO ---
     const scriptURL = 'https://script.google.com/macros/s/AKfycbz3F_uFU81yagvW4KnIa_ja0wqfwS39QZzl7-KRc79waLmxWMSoli47OwgRuJ-m7LaHJg/exec'; 
+    // -------------------
+
     let html5QrCode;
 
+    // Carrega Nome e RE salvos no celular
+    window.onload = () => {
+        document.getElementById('nome').value = localStorage.getItem('nome') || '';
+        document.getElementById('re').value = localStorage.getItem('re') || '';
+    };
+
+    function salvarDados() {
+        localStorage.setItem('nome', document.getElementById('nome').value);
+        localStorage.setItem('re', document.getElementById('re').value);
+    }
+
     function iniciarCamera() {
+        if (!document.getElementById('nome').value || !document.getElementById('re').value) {
+            alert("Preencha Nome e RE antes de começar!");
+            return;
+        }
+
         html5QrCode = new Html5Qrcode("reader");
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-        .catch(err => {
-            alert("Erro ao acessar câmera: " + err);
-        });
+        .then(() => {
+            document.getElementById('btnStart').style.display = 'none';
+            exibirStatus("Câmera pronta! Aponte para o QR Code.", "success");
+        })
+        .catch(err => exibirStatus("Erro na câmera: " + err, "error"));
     }
 
     function onScanSuccess(decodedText) {
-        // Para o bip após ler para não duplicar
-        html5QrCode.pause(true);
-        document.getElementById('status').innerText = "Enviando dados...";
+        html5QrCode.pause(true); // Pausa para não ler o mesmo código várias vezes
+        exibirStatus("Lendo dados...", "success");
 
-        // Lógica de extração baseada no seu exemplo: 577532009650001
-        // Pega os 8 dígitos após o 577
+        // Extração: Pega 8 dígitos após '577'
         let cteMatch = decodedText.match(/577(\d{8})/);
-        let cte = cteMatch ? cteMatch[1] : "ERRO CTE";
+        let cte = cteMatch ? cteMatch[1] : "Não identificado";
 
-        // Destino: Pega o que vem depois do hífen (ex: FOR-CNF vira CNF)
+        // Extração: Pega o destino após o '-' (Ex: FOR-CNF -> CNF)
         let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})/);
-        let destino = rotaMatch ? rotaMatch[1] : "ERRO DEST";
+        let destino = rotaMatch ? rotaMatch[1] : "Não identificado";
 
-        let dados = {
+        const dados = {
             data: new Date().toLocaleDateString('pt-BR'),
             cte: cte,
             destino: destino,
@@ -66,24 +87,38 @@
             re: document.getElementById('re').value
         };
 
+        enviarParaPlanilha(dados);
+    }
+
+    function enviarParaPlanilha(dados) {
         fetch(scriptURL, {
             method: 'POST',
             mode: 'no-cors',
             body: JSON.stringify(dados)
         })
         .then(() => {
-            document.getElementById('status').innerText = "✅ Bipado: " + cte + " (" + destino + ")";
-            setTimeout(() => { 
-                document.getElementById('status').innerText = "";
-                html5QrCode.resume(); 
+            exibirStatus(`✅ ENVIADO: CTE ${dados.cte}`, "success");
+            // Vibra o celular (se suportado)
+            if (navigator.vibrate) navigator.vibrate(200);
+            
+            // Retoma a câmera após 3 segundos
+            setTimeout(() => {
+                exibirStatus("Pronto para o próximo!", "success");
+                html5QrCode.resume();
             }, 3000);
         })
         .catch(err => {
-            alert("Erro na rede: " + err);
+            exibirStatus("Erro ao enviar: " + err, "error");
             html5QrCode.resume();
         });
     }
+
+    function exibirStatus(msg, classe) {
+        const s = document.getElementById('status');
+        s.innerText = msg;
+        s.className = classe;
+    }
 </script>
+
 </body>
 </html>
-
