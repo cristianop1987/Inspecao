@@ -18,17 +18,20 @@
 
 <div class="container">
     <h2>Check-in de Carga</h2>
-    <input type="text" id="nome" placeholder="Seu Nome (Vistoriado por)">
+    <input type="text" id="nome" placeholder="Seu Nome">
     <input type="text" id="re" placeholder="Seu RE">
     
-    <div id="reader"></div>
-    <button onclick="iniciarCamera()">Ligar Câmera</button>
+    <div id="reader" style="width: 300px; margin: auto;"></div>
+    
+    <button onclick="iniciarCamera()" style="padding: 15px; width: 100%; margin-top: 10px;">
+        LIGAR CÂMERA
+    </button>
     
     <div id="status" class="status"></div>
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyMFRUiU1McOn9ndecckwdhcO3QiRWl3KYd2t4Autnf0EcgSO5vyvIAcrGgt0JgEy2b-w/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz3F_uFU81yagvW4KnIa_ja0wqfwS39QZzl7-KRc79waLmxWMSoli47OwgRuJ-m7LaHJg/exec'; 
     let html5QrCode;
 
     function iniciarCamera() {
@@ -83,3 +86,4 @@
 </script>
 </body>
 </html>
+
