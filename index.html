@@ -22,7 +22,6 @@
     <h2>Scanner Azul Cargo</h2>
     <input type="text" id="nome" placeholder="Vistoriado por (Nome)">
     <input type="text" id="re" placeholder="RE">
-    <input type="number" id="qtdInspec" placeholder="Qtd. Volumes Inspecionados" value="1">
     
     <div id="reader"></div>
     <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LIGAR CÂMERA</button>
@@ -32,13 +31,16 @@
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbxu-jFGdEQA694B3ePqzjrknrGHBj8HrbFTkdsfbLwUPIkH_beF-On_0SzsLDDW5eGnSA/exec'; 
+    const scriptURL = 'SUA_URL_AQUI'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
 
     function toggleCamera() {
         if (!cameraAtiva) {
+            if(!document.getElementById('nome').value || !document.getElementById('re').value) {
+                alert("Preencha seu Nome e RE primeiro!"); return;
+            }
             html5QrCode = new Html5Qrcode("reader");
             html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess)
             .then(() => {
@@ -53,42 +55,50 @@
             html5QrCode.stop().then(() => {
                 cameraAtiva = false;
                 document.getElementById('btnAcao').innerText = "LIGAR CÂMERA";
-            });
+            }).catch(() => { cameraAtiva = false; });
         }
     }
 
     function onScanSuccess(decodedText) {
         pararCamera();
-        const statusDiv = document.getElementById('status');
-        statusDiv.style.color = "blue";
-        statusDiv.innerText = "Processando leitura...";
-
-        // REGEX ATUALIZADAS
-        // CTE: 577 + 8 dígitos
-        let cteMatch = decodedText.match(/577(\d{8})/);
         
-        // DESTINO E QTD TOTAL: Procura XXX-YYY|ZZZ|
-        // Ex: FOR-CNF|7| -> Destino: CNF, Qtd Total: 7
+        // Extração dos dados do QR Code
+        let cteMatch = decodedText.match(/577(\d{8})/);
         let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})\|(\d+)\|/);
+        
+        let cte = cteMatch ? cteMatch[1] : "N/I";
+        let destino = rotaMatch ? rotaMatch[1] : "N/I";
+        let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
+
+        // PERGUNTA A QUANTIDADE APÓS BIPAR
+        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes na carga: ${qtdTotal}\n\nQuantos volumes você inspecionou?`, "1");
+
+        if (qtdInspec === null) {
+            document.getElementById('status').innerText = "Envio cancelado.";
+            return;
+        }
+
+        document.getElementById('status').style.color = "blue";
+        document.getElementById('status').innerText = "Enviando para planilha...";
 
         const dados = {
             data: new Date().toLocaleDateString('pt-BR'),
-            cte: cteMatch ? cteMatch[1] : "N/I",
-            destino: rotaMatch ? rotaMatch[1] : "N/I",
-            qtdTotal: rotaMatch ? rotaMatch[2] : "0",
-            qtdInspec: document.getElementById('qtdInspec').value,
+            cte: cte,
+            destino: destino,
+            qtdTotal: qtdTotal,
+            qtdInspec: qtdInspec,
             nome: document.getElementById('nome').value,
             re: document.getElementById('re').value
         };
 
         fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) })
         .then(() => {
-            statusDiv.style.color = "green";
-            statusDiv.innerText = `✅ Enviado: CTE ${dados.cte} (${dados.qtdTotal} vol)`;
+            document.getElementById('status').style.color = "green";
+            document.getElementById('status').innerText = `✅ Enviado: CTE ${dados.cte}`;
         })
         .catch(err => {
-            statusDiv.style.color = "red";
-            statusDiv.innerText = "Erro ao enviar!";
+            document.getElementById('status').style.color = "red";
+            document.getElementById('status').innerText = "Erro no envio!";
         });
     }
 
