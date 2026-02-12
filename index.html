@@ -6,33 +6,33 @@
     <title>Scanner F-CGO-004</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f4f4f9; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
-        #reader { width: 100%; border-radius: 10px; margin-top: 15px; }
-        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        body { font-family: sans-serif; text-align: center; padding: 15px; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        #reader { width: 100%; border-radius: 10px; margin-top: 10px; background: #000; }
+        button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; }
         .btn-camera { background-color: #003399; color: white; }
         .btn-pdf { background-color: #d9534f; color: white; margin-top: 20px; }
-        #status { margin-top: 15px; font-weight: bold; color: #28a745; }
+        #status { margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>Scanner Azul Cargo</h2>
-    <input type="text" id="nome" placeholder="Nome Completo">
+    <input type="text" id="nome" placeholder="Vistoriado por (Nome)">
     <input type="text" id="re" placeholder="RE">
+    <input type="number" id="qtdInspec" placeholder="Qtd. Volumes Inspecionados" value="1">
     
     <div id="reader"></div>
     <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LIGAR CÂMERA</button>
     
     <div id="status"></div>
-
     <button class="btn-pdf" onclick="abrirPDF()">VISUALIZAR PLANILHA (PDF)</button>
 </div>
 
 <script>
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbzeREB5CsPZK2wbkLaqPfiIXYA_z1_f1km3oyKXrLnvffGo6zx2x_A6vzFA9BX6MtVaFA/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxu-jFGdEQA694B3ePqzjrknrGHBj8HrbFTkdsfbLwUPIkH_beF-On_0SzsLDDW5eGnSA/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
@@ -45,9 +45,7 @@
                 cameraAtiva = true;
                 document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA";
             });
-        } else {
-            pararCamera();
-        }
+        } else { pararCamera(); }
     }
 
     function pararCamera() {
@@ -60,39 +58,47 @@
     }
 
     function onScanSuccess(decodedText) {
-        // Desliga a câmera imediatamente após a leitura bem-sucedida
         pararCamera();
-        document.getElementById('status').innerText = "Enviando dados...";
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.color = "blue";
+        statusDiv.innerText = "Processando leitura...";
 
+        // REGEX ATUALIZADAS
+        // CTE: 577 + 8 dígitos
         let cteMatch = decodedText.match(/577(\d{8})/);
-        let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})/);
+        
+        // DESTINO E QTD TOTAL: Procura XXX-YYY|ZZZ|
+        // Ex: FOR-CNF|7| -> Destino: CNF, Qtd Total: 7
+        let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})\|(\d+)\|/);
 
         const dados = {
             data: new Date().toLocaleDateString('pt-BR'),
             cte: cteMatch ? cteMatch[1] : "N/I",
             destino: rotaMatch ? rotaMatch[1] : "N/I",
+            qtdTotal: rotaMatch ? rotaMatch[2] : "0",
+            qtdInspec: document.getElementById('qtdInspec').value,
             nome: document.getElementById('nome').value,
             re: document.getElementById('re').value
         };
 
         fetch(scriptURL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(dados) })
         .then(() => {
-            document.getElementById('status').innerText = "✅ Bipado: CTE " + dados.cte;
+            statusDiv.style.color = "green";
+            statusDiv.innerText = `✅ Enviado: CTE ${dados.cte} (${dados.qtdTotal} vol)`;
+        })
+        .catch(err => {
+            statusDiv.style.color = "red";
+            statusDiv.innerText = "Erro ao enviar!";
         });
     }
 
     function abrirPDF() {
-    // O parâmetro 'gid' garante que ele abra a aba correta (1495736702)
-    // O parâmetro 'cachebuster' gera um número aleatório para o Google não mostrar uma versão antiga salva
-    const gid = '1495736702';
-    const cachebuster = Math.round(new Date().getTime() / 1000);
-    
-    const pdfUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?format=pdf&gid=${gid}&size=A4&portrait=false&fitw=true&gridlines=true&cachebuster=${cachebuster}`;
-    
-    window.open(pdfUrl, '_blank');
-}
+        const gid = '1495736702';
+        const cb = Math.round(new Date().getTime() / 1000);
+        const pdfUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?format=pdf&gid=${gid}&size=A4&portrait=false&fitw=true&gridlines=true&cachebuster=${cb}`;
+        window.open(pdfUrl, '_blank');
+    }
 </script>
 
 </body>
 </html>
-
