@@ -6,56 +6,80 @@
     <title>Leitor Azul Cargo</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; text-align: center; }
-        input { width: 80%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; }
-        #reader { width: 100%; max-width: 500px; margin: 20px auto; }
-        .status { color: green; font-weight: bold; margin-top: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; text-align: center; background-color: #f4f4f9; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-top: 20px; background: #eee; }
+        button { background-color: #0056b3; color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        .status { color: #28a745; font-weight: bold; margin-top: 15px; min-height: 20px; }
     </style>
 </head>
 <body>
+
+<div class="container">
     <h2>Check-in de Carga</h2>
-    <input type="text" id="nome" placeholder="Seu Nome">
+    <input type="text" id="nome" placeholder="Seu Nome (Vistoriado por)">
     <input type="text" id="re" placeholder="Seu RE">
     
     <div id="reader"></div>
+    <button onclick="iniciarCamera()">Ligar Câmera</button>
+    
     <div id="status" class="status"></div>
+</div>
 
-    <script>
-        const scriptURL = https://script.google.com/macros/s/AKfycbyMFRUiU1McOn9ndecckwdhcO3QiRWl3KYd2t4Autnf0EcgSO5vyvIAcrGgt0JgEy2b-w/exec; // <--- COLE A URL AQUI
+<script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyMFRUiU1McOn9ndecckwdhcO3QiRWl3KYd2t4Autnf0EcgSO5vyvIAcrGgt0JgEy2b-w/exec'; 
+    let html5QrCode;
 
-        function onScanSuccess(decodedText) {
-            document.getElementById('status').innerText = "Processando...";
-            
-            // Lógica de extração
-            // CTE: Procura 577 e pega os 8 números seguintes
-            let cteMatch = decodedText.match(/577(\d{8})/);
-            let cte = cteMatch ? cteMatch[1] : "Não encontrado";
+    function iniciarCamera() {
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-            // Destino: Procura padrão XXX-YYY e pega o YYY
-            let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})/);
-            let destino = rotaMatch ? rotaMatch[1] : "Não encontrado";
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+        .catch(err => {
+            alert("Erro ao acessar câmera: " + err);
+        });
+    }
 
-            let dados = {
-                data: new Date().toLocaleDateString('pt-BR'),
-                cte: cte,
-                destino: destino,
-                nome: document.getElementById('nome').value,
-                re: document.getElementById('re').value
-            };
+    function onScanSuccess(decodedText) {
+        // Para o bip após ler para não duplicar
+        html5QrCode.pause(true);
+        document.getElementById('status').innerText = "Enviando dados...";
 
-            fetch(scriptURL, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                body: JSON.stringify(dados)
-            }).then(() => {
-                document.getElementById('status').innerText = "Bipado com sucesso: " + cte;
-                // Alerta sonoro ou vibração pode ser adicionado aqui
-            }).catch(err => alert("Erro ao enviar: " + err));
-        }
+        // Lógica de extração baseada no seu exemplo: 577532009650001
+        // Pega os 8 dígitos após o 577
+        let cteMatch = decodedText.match(/577(\d{8})/);
+        let cte = cteMatch ? cteMatch[1] : "ERRO CTE";
 
-        let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
-    </script>
+        // Destino: Pega o que vem depois do hífen (ex: FOR-CNF vira CNF)
+        let rotaMatch = decodedText.match(/[A-Z]{3}-([A-Z]{3})/);
+        let destino = rotaMatch ? rotaMatch[1] : "ERRO DEST";
+
+        let dados = {
+            data: new Date().toLocaleDateString('pt-BR'),
+            cte: cte,
+            destino: destino,
+            nome: document.getElementById('nome').value,
+            re: document.getElementById('re').value
+        };
+
+        fetch(scriptURL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify(dados)
+        })
+        .then(() => {
+            document.getElementById('status').innerText = "✅ Bipado: " + cte + " (" + destino + ")";
+            setTimeout(() => { 
+                document.getElementById('status').innerText = "";
+                html5QrCode.resume(); 
+            }, 3000);
+        })
+        .catch(err => {
+            alert("Erro na rede: " + err);
+            html5QrCode.resume();
+        });
+    }
+</script>
 </body>
 </html>
