@@ -1,11 +1,11 @@
 {
-  "short_name": "F-CGO-004",
+  "short_name": "AzulScanner",
   "name": "Azul Cargo Scanner F-CGO-004",
   "icons": [
     {
-      "src": "https://drive.google.com/file/d/171PjwKX-xImHU-8n6OjUzGTICNAAxAMp/view?usp=sharing",
-      "type": "image/png",
-      "sizes": "512x512",
+      "src": "F-CGO-004.jpg",
+      "type": "image/jpeg",
+      "sizes": "1024x1024",
       "purpose": "any maskable"
     }
   ],
