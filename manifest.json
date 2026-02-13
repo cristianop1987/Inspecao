@@ -3,8 +3,8 @@
   "name": "Azul Cargo Scanner F-CGO-004",
   "icons": [
     {
-      "src": "F-CGO-004.jpg",
-      "type": "image/jpeg",
+      "src": "x-ray.png",
+      "type": "image/png",
       "sizes": "1024x1024",
       "purpose": "any maskable"
     }
