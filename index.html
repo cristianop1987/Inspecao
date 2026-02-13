@@ -92,11 +92,16 @@
         pararCamera();
         
         let cteMatch = decodedText.match(/577(\d{8})/);
-        let rotaMatch = decodedText.match(/([A-Z]{3,7})-([A-Z]{3,7})\|(\d+)\|/);
+        let rotaMatch = decodedText.match(/([A-Z0-9]{3,7})-([A-Z0-9]{3,7})\|(\d+)\|/);
         
         let cte = cteMatch ? cteMatch[1] : "N/I";
-        let destino = rotaMatch ? rotaMatch[1] : "N/I";
-        let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
+
+// rotaMatch[1] = Origem (ex: ABC)
+// rotaMatch[2] = Destino (ex: PV013)
+// rotaMatch[3] = Quantidade (o que vem após o |)
+
+let destino = rotaMatch ? rotaMatch[2] : "N/I"; 
+let qtdTotal = rotaMatch ? rotaMatch[3] : "0";
 
         let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantos volumes inspeccionados?`, "1");
 
@@ -171,6 +176,7 @@
 
 </body>
 </html>
+
 
 
 
