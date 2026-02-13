@@ -39,17 +39,17 @@
         </div>
     </div>
 
-    <input type="text" id="nome" placeholder="Nome do Vistoriador">
+    <input type="text" id="nome" placeholder="Nome do APAC">
     <input type="text" id="re" placeholder="RE">
     
     <div id="reader"></div>
-    <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LIGAR CÂMERA</button>
+    <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LER QRCODE</button>
     
     <div id="status"></div>
 
     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
     
-    <button class="btn-pdf" onclick="baixarPDF()">BAIXAR PDF (PAISAGEM)</button>
+    <button class="btn-pdf" onclick="baixarPDF()">BAIXAR PDF</button>
     <button class="btn-limpar" onclick="confirmarLimpeza()">LIMPAR PLANILHA</button>
 </div>
 
@@ -78,7 +78,7 @@
         if (html5QrCode) {
             html5QrCode.stop().then(() => {
                 cameraAtiva = false;
-                document.getElementById('btnAcao').innerText = "LIGAR CÂMERA";
+                document.getElementById('btnAcao').innerText = "LER QRCODE";
             }).catch(() => { cameraAtiva = false; });
         }
     }
@@ -97,7 +97,7 @@
 
         if (qtdInspec === null) return;
 
-        document.getElementById('status').innerText = "A gravar...";
+        document.getElementById('status').innerText = "Enviando dados...";
 
         const dados = {
             data: new Date().toLocaleDateString('pt-BR'),
@@ -166,4 +166,5 @@
 
 </body>
 </html>
+
 
