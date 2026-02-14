@@ -100,8 +100,8 @@
 // rotaMatch[2] = Destino (ex: PV013)
 // rotaMatch[3] = Quantidade (o que vem após o |)
 
-let destino = rotaMatch ? rotaMatch[1] : "N/I"; 
-let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
+let destino = rotaMatch ? rotaMatch[2] : "N/I"; 
+let qtdTotal = rotaMatch ? rotaMatch[3] : "0";
 
         let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantos volumes inspeccionados?`, "1");
 
@@ -176,6 +176,7 @@ let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
 
 </body>
 </html>
+
 
 
 
