@@ -28,7 +28,15 @@
         .btn-pdf { background-color: #d9534f; color: white; }
         .btn-limpar { background-color: #f0ad4e; color: white; }
         
-        #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
+               /* Botão quando está desabilitado */
+        .btn-limpar:disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
+          opacity: 0.7;
+         }
+
+         #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
+        
     </style>
 </head>
 <body>
@@ -55,7 +63,7 @@
     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
     
     <button class="btn-pdf" onclick="baixarPDF()">BAIXAR PDF</button>
-    <button class="btn-limpar" onclick="confirmarLimpeza()">LIMPAR PLANILHA</button>
+    <button id="btnLimpar" class="btn-limpar" onclick="confirmarLimpeza()" disabled>LIMPAR PLANILHA</button>
 </div>
 
 <script>
@@ -144,17 +152,23 @@ let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
     function atualizarContador(valor) {
     const n = parseInt(valor);
     document.getElementById('contagem').innerText = n;
+    
     const porcentagem = (n / 21) * 100;
     const barra = document.getElementById('barra');
+    const botaoLimpar = document.getElementById('btnLimpar');
+    
     barra.style.width = porcentagem + "%";
     
-    if(n >= 21) {
-        barra.style.backgroundColor = "#003399"; // Azul escuro para indicar "Salvo"
-        alert("✅ Limite atingido! Uma cópia de segurança foi criada automaticamente na planilha.");
-    } else if(n >= 18) {
-        barra.style.backgroundColor = "#d9534f";
+    // Habilita o botão apenas se chegar em 21
+    if (n >= 21) {
+        botaoLimpar.disabled = false;
+        barra.style.backgroundColor = "#003399"; // Cor de "concluído"
     } else {
-        barra.style.backgroundColor = "#28a745";
+        botaoLimpar.disabled = true;
+        // Cores da barra conforme o progresso
+        if (n >= 18) barra.style.backgroundColor = "#d9534f";
+        else if (n >= 10) barra.style.backgroundColor = "#f0ad4e";
+        else barra.style.backgroundColor = "#28a745";
     }
 }
 
@@ -195,6 +209,7 @@ let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
 
 </body>
 </html>
+
 
 
 
