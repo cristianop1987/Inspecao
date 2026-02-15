@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#003399">
-   <meta name="apple-mobile-web-app-capable" content="yes">
-   <link rel="icon" type="image/jpeg" href="x-ray.png">
-   <link rel="apple-touch-icon" href="x-ray.png">
-   <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/jpeg" href="x-ray.png">
+    <link rel="apple-touch-icon" href="x-ray.png">
+    <link rel="manifest" href="manifest.json">
     <title>Scanner F-CGO-004 - Azul Cargo</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -60,7 +60,7 @@
 
 <script>
     // --- CONFIGURAÇÃO ---
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwk6aZAvPFIpGZlX2EYlpg8auwcxSf7mz44t3QG9HWdwXZJko7p9K8FEyWmfp0Dz4JbQA/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzQzc_Q_5PGI6YVxvVh_j2i17DHUn_PTvp0A8qeAz7LhG2kzrTY_nTahZiOg-4R58szDg/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
@@ -140,6 +140,25 @@ let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
         else barra.style.backgroundColor = "#28a745";
     }
 
+
+    function atualizarContador(valor) {
+    const n = parseInt(valor);
+    document.getElementById('contagem').innerText = n;
+    const porcentagem = (n / 21) * 100;
+    const barra = document.getElementById('barra');
+    barra.style.width = porcentagem + "%";
+    
+    if(n >= 21) {
+        barra.style.backgroundColor = "#003399"; // Azul escuro para indicar "Salvo"
+        alert("✅ Limite atingido! Uma cópia de segurança foi criada automaticamente na planilha.");
+    } else if(n >= 18) {
+        barra.style.backgroundColor = "#d9534f";
+    } else {
+        barra.style.backgroundColor = "#28a745";
+    }
+}
+
+    
     function confirmarLimpeza() {
         if (confirm("Tens a certeza que desejas LIMPAR os dados da planilha?")) {
             const status = document.getElementById('status');
@@ -176,6 +195,7 @@ let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
 
 </body>
 </html>
+
 
 
 
