@@ -97,44 +97,57 @@
     }
 
     function onScanSuccess(decodedText) {
-        pararCamera();
-        
+    pararCamera();
+    
+    let cte, destino, qtdTotal;
+
+    // LÓGICA PARA O NOVO QR CODE (Ex: FOR-0013339|...|SDU|...)
+    if (decodedText.includes('|')) {
+        let partes = decodedText.split('|');
+        cte = partes[0]; // FOR-0013339 (Coluna C no Script)
+        destino = partes[2]; // SDU (Coluna D no Script)
+        qtdTotal = "1"; // Sempre 1 volume conforme solicitado
+    } 
+    // LÓGICA PARA O QR CODE ANTIGO (Padrão 577...)
+    else {
         let cteMatch = decodedText.match(/577(\d{8})/);
         let rotaMatch = decodedText.match(/[A-Z0-9]{3,7}-([A-Z0-9]{3,7})\|(\d+)\|/);
         
-        let cte = cteMatch ? cteMatch[1] : "N/I";
-
-// rotaMatch[1] = Origem (ex: ABC)
-// rotaMatch[2] = Destino (ex: PV013)
-// rotaMatch[3] = Quantidade (o que vem após o |)
-
-let destino = rotaMatch ? rotaMatch[1] : "N/I"; 
-let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
-
-        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantos volumes inspeccionados?`, "1");
-
-        if (qtdInspec === null) return;
-
-        document.getElementById('status').innerText = "Enviando dados...";
-
-        const dados = {
-            data: new Date().toLocaleDateString('pt-BR'),
-            cte: cte, destino: destino, qtdTotal: qtdTotal, qtdInspec: qtdInspec,
-            nome: document.getElementById('nome').value, re: document.getElementById('re').value
-        };
-
-        fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
-        .then(response => response.text())
-        .then(resultado => {
-            if(resultado === "CHEIA") {
-                alert("⚠️ A planilha atingiu o limite de 21 linhas!");
-            } else {
-                atualizarContador(resultado);
-                document.getElementById('status').style.color = "green";
-                document.getElementById('status').innerText = "✅ Bipado (" + resultado + "/21)";
-            }
-        });
+        cte = cteMatch ? cteMatch[1] : "N/I";
+        destino = rotaMatch ? rotaMatch[1] : "N/I"; 
+        qtdTotal = rotaMatch ? rotaMatch[2] : "0";
     }
+
+    let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantos volumes inspecionados?`, "1");
+
+    if (qtdInspec === null) return;
+
+    document.getElementById('status').innerText = "Enviando dados...";
+
+    // Localize esta parte no seu index.html e substitua:
+const dados = {
+    // .toLocaleString('pt-BR') captura Data e Hora (ex: 19/02/2026 18:45:00)
+    data: new Date().toLocaleString('pt-BR'), 
+    cte: cte, 
+    destino: destino, 
+    qtdTotal: qtdTotal, 
+    qtdInspec: qtdInspec,
+    nome: document.getElementById('nome').value, 
+    re: document.getElementById('re').value
+};
+
+    fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
+    .then(response => response.text())
+    .then(resultado => {
+        if(resultado === "CHEIA") {
+            alert("⚠️ A planilha atingiu o limite de 21 linhas!");
+        } else {
+            atualizarContador(resultado);
+            document.getElementById('status').style.color = "green";
+            document.getElementById('status').innerText = "✅ Bipado (" + resultado + "/21)";
+        }
+    });
+}
 
     function atualizarContador(valor) {
         const n = parseInt(valor);
@@ -209,6 +222,7 @@ let qtdTotal = rotaMatch ? rotaMatch[2] : "0";
 
 </body>
 </html>
+
 
 
 
