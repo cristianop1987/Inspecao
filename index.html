@@ -107,7 +107,7 @@
     // Se tiver mais de 5 barras e a posição 6 for SACO COLETOR
     if (partes.length > 5 && (partes[5].includes("SACO") || partes[5].includes("COLETOR"))) {
         cte = partes[0]; // Ex: FOR07-0013339 ou VIX-12345
-        destino = partes[2] || "N/I"; // O destino costuma ser a 3ª parte
+        destino = partes[3] || "N/I"; // O destino costuma ser a 3ª parte
         qtdTotal = "1"; // Quantidade fixa de 1 volume
     } 
     // 2. VERIFICA SE É O PADRÃO ANTIGO (Começa com 577)
@@ -229,6 +229,7 @@
 
 </body>
 </html>
+
 
 
 
