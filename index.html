@@ -68,7 +68,7 @@
 
 <script>
     // --- CONFIGURAÇÃO ---
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwLGJDx4usGGNv5oze-10WI8sxgm-WCHUkRsWVqxvyt7CX9SkxD1ePRLTteRlpcgDnviQ/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbz_L3dcsx6dGp4_ioh3ALMcOfU06F7F4EzGwkyIpUWvu1-gmZHQCcgwCas7H72uUTvR/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
@@ -100,22 +100,30 @@
     pararCamera();
     
     let cte, destino, qtdTotal;
+    const texto = decodedText.trim();
+    const partes = texto.split('|');
 
-    // LÓGICA PARA O NOVO QR CODE (Ex: FOR-0013339|...|SDU|...)
-    if (decodedText.includes('|')) {
-        let partes = decodedText.split('|');
-        cte = partes[0]; // FOR-0013339 (Coluna C no Script)
-        destino = partes[2]; // SDU (Coluna D no Script)
-        qtdTotal = "1"; // Sempre 1 volume conforme solicitado
+    // 1. VERIFICA SE É O NOVO PADRÃO (Baseado na estrutura de barras e "SACO COLETOR")
+    // Se tiver mais de 5 barras e a posição 6 for SACO COLETOR
+    if (partes.length > 5 && (partes[5].includes("SACO") || partes[5].includes("COLETOR"))) {
+        cte = partes[0]; // Ex: FOR07-0013339 ou VIX-12345
+        destino = partes[2] || "N/I"; // O destino costuma ser a 3ª parte
+        qtdTotal = "1"; // Quantidade fixa de 1 volume
     } 
-    // LÓGICA PARA O QR CODE ANTIGO (Padrão 577...)
-    else {
-        let cteMatch = decodedText.match(/577(\d{8})/);
-        let rotaMatch = decodedText.match(/[A-Z0-9]{3,7}-([A-Z0-9]{3,7})\|(\d+)\|/);
+    // 2. VERIFICA SE É O PADRÃO ANTIGO (Começa com 577)
+    else if (texto.startsWith("577")) {
+        let cteMatch = texto.match(/577(\d{8})/);
+        let rotaMatch = texto.match(/[A-Z0-9]{3,7}-([A-Z0-9]{3,7})\|(\d+)\|/);
         
-        cte = cteMatch ? cteMatch[1] : "N/I";
+        cte = cteMatch ? cteMatch[1] : texto.substring(0, 11);
         destino = rotaMatch ? rotaMatch[1] : "N/I"; 
         qtdTotal = rotaMatch ? rotaMatch[2] : "0";
+    } 
+    // 3. PADRÃO GENÉRICO (Caso não se encaixe nos anteriores mas tenha o formato de origem)
+    else {
+        cte = partes[0];
+        destino = partes[2] || "N/I";
+        qtdTotal = "1";
     }
 
     let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantos volumes inspecionados?`, "1");
@@ -124,17 +132,16 @@
 
     document.getElementById('status').innerText = "Enviando dados...";
 
-    // Localize esta parte no seu index.html e substitua:
-const dados = {
-    // .toLocaleString('pt-BR') captura Data e Hora (ex: 19/02/2026 18:45:00)
-    data: new Date().toLocaleString('pt-BR'), 
-    cte: cte, 
-    destino: destino, 
-    qtdTotal: qtdTotal, 
-    qtdInspec: qtdInspec,
-    nome: document.getElementById('nome').value, 
-    re: document.getElementById('re').value
-};
+    const dados = {
+        // Envia Data e Hora local
+        data: new Date().toLocaleString('pt-BR'), 
+        cte: cte, 
+        destino: destino, 
+        qtdTotal: qtdTotal, 
+        qtdInspec: qtdInspec,
+        nome: document.getElementById('nome').value, 
+        re: document.getElementById('re').value
+    };
 
     fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
     .then(response => response.text())
@@ -222,6 +229,7 @@ const dados = {
 
 </body>
 </html>
+
 
 
 
