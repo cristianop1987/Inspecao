@@ -99,56 +99,60 @@
     function onScanSuccess(decodedText) {
     pararCamera();
     
-    let cte, destino, qtdTotal, tipo;
+    let cte, destino, qtdTotal;
     const texto = decodedText.trim();
     const partes = texto.split('|');
 
-    // 1. VERIFICA SE É PADRÃO SACO COLETOR
-    // Procura o índice que contém "SACO COLETOR"
-    let idxSaco = partes.findIndex(p => p.includes("SACO COLETOR"));
-
-    if (idxSaco !== -1) {
-        tipo = "SACO";
-        cte = partes[0]; 
-        // O destino é o que vem antes da DATA, e a DATA vem antes do SACO COLETOR
-        // Estrutura: [Destino] | [Data] | SACO COLETOR
-        destino = partes[idxSaco - 2] || "N/I"; 
-        qtdTotal = "1";
+    // 1. VERIFICA SE É O NOVO PADRÃO (Baseado na estrutura de barras e "SACO COLETOR")
+    // Se tiver mais de 5 barras e a posição 6 for SACO COLETOR
+    if (partes.length > 5 && (partes[5].includes("SACO") || partes[5].includes("COLETOR"))) {
+        cte = partes[0]; // Ex: FOR07-0013339 ou VIX-12345
+        destino = partes[2] || "N/I"; // O destino costuma ser a 3ª parte
+        qtdTotal = "1"; // Quantidade fixa de 1 volume
     } 
-    // 2. VERIFICA SE É PADRÃO 577
+    // 2. VERIFICA SE É O PADRÃO ANTIGO (Começa com 577)
     else if (texto.startsWith("577")) {
-        tipo = "577";
         let cteMatch = texto.match(/577(\d{8})/);
         let rotaMatch = texto.match(/[A-Z0-9]{3,7}-([A-Z0-9]{3,7})\|(\d+)\|/);
         
         cte = cteMatch ? cteMatch[1] : texto.substring(0, 11);
         destino = rotaMatch ? rotaMatch[1] : "N/I"; 
         qtdTotal = rotaMatch ? rotaMatch[2] : "0";
-    } else {
-        alert("Padrão não reconhecido.");
-        return;
+    } 
+    // 3. PADRÃO GENÉRICO (Caso não se encaixe nos anteriores mas tenha o formato de origem)
+    else {
+        cte = partes[0];
+        destino = partes[2] || "N/I";
+        qtdTotal = "1";
     }
 
-    let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes: ${qtdTotal}\n\nVolumes inspecionados?`, "1");
+    let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes Totais: ${qtdTotal}\n\nQuantos volumes inspecionados?`, "1");
+
     if (qtdInspec === null) return;
 
+    document.getElementById('status').innerText = "Enviando dados...";
+
     const dados = {
+        // Envia Data e Hora local
         data: new Date().toLocaleString('pt-BR'), 
         cte: cte, 
         destino: destino, 
         qtdTotal: qtdTotal, 
         qtdInspec: qtdInspec,
-        tipo: tipo, // Enviamos o tipo para o Script decidir a coluna
         nome: document.getElementById('nome').value, 
         re: document.getElementById('re').value
     };
 
-    document.getElementById('status').innerText = "Enviando...";
     fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
-    .then(r => r.text())
-    .then(res => {
-        atualizarContador(res);
-        document.getElementById('status').innerText = "✅ Sucesso (" + res + "/21)";
+    .then(response => response.text())
+    .then(resultado => {
+        if(resultado === "CHEIA") {
+            alert("⚠️ A planilha atingiu o limite de 21 linhas!");
+        } else {
+            atualizarContador(resultado);
+            document.getElementById('status').style.color = "green";
+            document.getElementById('status').innerText = "✅ Bipado (" + resultado + "/21)";
+        }
     });
 }
 
@@ -225,6 +229,7 @@
 
 </body>
 </html>
+
 
 
 
