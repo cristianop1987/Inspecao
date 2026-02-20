@@ -68,7 +68,7 @@
 
 <script>
     // --- CONFIGURAÇÃO ---
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbx28RDnqFjn3nOqYn7PTvQEm6A6YCYYMcDlPCSbqYIeSiYzQ87Ep0WH2Ypqt_XD4wPMLA/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycby4VaLwPUe1TZfAc9K1xeAHI5_RD2E9e5zoYTUduC9UcKrDbmpFzN2V9zqXpC7DNohL/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
@@ -150,18 +150,32 @@
         re: document.getElementById('re').value
     };
 
-    document.getElementById('status').innerText = "Enviando...";
-    fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
-    .then(r => r.text())
-    .then(res => {
-        if(res === "CHEIA") {
-            alert("⚠️ Planilha Cheia!");
-        } else {
-            atualizarContador(res);
-            document.getElementById('status').style.color = "green";
-            document.getElementById('status').innerText = "✅ Bipado (" + res + "/21)";
-        }
-    });
+    function enviarDados(confirmar = false) {
+        dados.confirmarRepetido = confirmar; // Adiciona a flag de confirmação
+
+        document.getElementById('status').innerText = "Enviando...";
+        
+        fetch(scriptURL, { method: 'POST', body: JSON.stringify(dados) })
+        .then(r => r.text())
+        .then(res => {
+            if (res === "REPETIDO") {
+                if (confirm(`Atenção: O código ${cte} já foi registrado!\n\nDeseja registrar novamente?`)) {
+                    enviarDados(true); // Reenvia com a confirmação
+                } else {
+                    document.getElementById('status').innerText = "Registro cancelado.";
+                    document.getElementById('status').style.color = "orange";
+                }
+            } else if (res === "CHEIA") {
+                alert("⚠️ A planilha atingiu o limite de 21 linhas!");
+            } else {
+                atualizarContador(res);
+                document.getElementById('status').style.color = "green";
+                document.getElementById('status').innerText = "✅ Bipado (" + res + "/21)";
+            }
+        });
+    }
+
+    enviarDados(); // Chama a função de envio pela primeira vez
 }
 
     function atualizarContador(valor) {
@@ -237,6 +251,7 @@
 
 </body>
 </html>
+
 
 
 
