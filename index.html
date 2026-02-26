@@ -62,13 +62,13 @@
 
     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
     
-    <button class="btn-pdf" onclick="baixarPDF()">BAIXAR PDF</button>
+    <button class="btn-pdf" style="background-color: #28a745;" onclick="encerrarTurno()">ENCERRAR TURNO</button>
     <button id="btnLimpar" class="btn-limpar" onclick="confirmarLimpeza()" disabled>LIMPAR PLANILHA</button>
 </div>
 
 <script>
     // --- CONFIGURAÇÃO ---
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbw9ZkGkEVsn2HSVniPBMkpy-Fh1BnZE5DtY4eOyOA9-DCWUkuqwTZGQB5LwRGJMSFOLfA/exec'; 
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwxV6JM2aajX2bP-aFTI7WvsxB0EfinH37f4smvrnr-RkwMeOdWNonjw_vqgz7x3a6xPQ/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
@@ -260,28 +260,41 @@ enviarParaPlanilha(dados);
         }
     }
 
-    function baixarPDF() {
-        const gid = '1495736702';
-        const cb = Math.round(new Date().getTime() / 1000);
-        
-        // Parâmetros para forçar DOWNLOAD + PAISAGEM + SEM CABEÇALHOS
-        const params = [
-            'format=pdf', 'size=A4', 'portrait=false', 'fitw=true',
-            'gridlines=false', 'headers=false', 'attachment=true',
-            'gid=' + gid, 'r1=0', 'c1=0', 'r2=32', 'c2=12', 'cachebuster=' + cb
-        ].join('&');
+    function encerrarTurno() {
+    const nome = document.getElementById('nome').value;
+    const re = document.getElementById('re').value;
 
-        const pdfUrl = `https://docs.google.com/spreadsheets/d/${sheetID}/export?${params}`;
-        
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.download = `Inspecao_AzulCargo_${new Date().getTime()}.pdf`;
-        link.click();
+    if (!nome || !re) {
+        alert("Por favor, preencha Nome e RE para encerrar o turno.");
+        return;
     }
+
+    if (confirm("Deseja realmente ENCERRAR O TURNO?\n\nIsso irá arquivar os dados atuais e limpar a planilha para o próximo funcionário.")) {
+        const status = document.getElementById('status');
+        status.innerText = "Encerrando turno e arquivando...";
+        
+        // Envia o comando para o Script arquivar e limpar
+        fetch(scriptURL + '?action=encerrar&nome=' + encodeURIComponent(nome) + '&re=' + encodeURIComponent(re))
+        .then(r => r.text())
+        .then(res => {
+            if (res === "OK") {
+                atualizarContador(0);
+                status.style.color = "green";
+                status.innerText = "✅ Turno Encerrado e Arquivado!";
+                alert("Turno encerrado com sucesso!");
+                setTimeout(() => { status.innerText = ""; }, 3000);
+            } else {
+                alert("Erro ao encerrar: " + res);
+            }
+        })
+        .catch(err => alert("Erro de conexão: " + err));
+    }
+}
 </script>
 
 </body>
 </html>
+
 
 
 
