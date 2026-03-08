@@ -57,24 +57,25 @@
     
     <div id="reader"></div>
     
-    <button onclick="alternarEntradaManual()" id="btnManual" 
-        style="margin-top: 15px; background: none; border: 1px solid #003399; color: #003399; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 14px;">
-    ⌨️ Digitar Manualmente
+   <button onclick="alternarEntradaManual()" id="btnManual" 
+        style="margin-top: 15px; background: none; border: 1px solid #003399; color: #003399; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold;">
+    ⌨️ Entrada Manual de Dados
 </button>
 
-<div id="manual-input-container" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; gap: 10px;">
-    <input type="text" id="manual-code" placeholder="Digite o código aqui..." 
-           style="padding: 12px; border-radius: 8px; border: 2px solid #003399; width: 80%; font-size: 16px; text-transform: uppercase;">
+<div id="manual-input-container" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
     
-    <div style="display: flex; gap: 10px; width: 80%;">
-        <button onclick="processarManual()" 
-                style="flex: 2; padding: 12px; background-color: #003399; color: white; border: none; border-radius: 8px; font-weight: bold;">
-            OK
-        </button>
-        <button onclick="alternarEntradaManual()" 
-                style="flex: 1; padding: 12px; background-color: #ccc; border: none; border-radius: 8px;">
-            Sair
-        </button>
+    <input type="text" id="m-codigo" placeholder="CTE ou Saco Coletor (B/C)" style="width: 90%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+    
+    <input type="text" id="m-destino" placeholder="Destino (D)" style="width: 90%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+    
+    <div style="display: flex; gap: 5px; width: 95%; justify-content: center;">
+        <input type="number" id="m-total" placeholder="Qtd Total (E)" style="width: 45%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+        <input type="number" id="m-inspec" placeholder="Qtd Inspec (F)" style="width: 45%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+    </div>
+
+    <div style="display: flex; gap: 10px; width: 95%; margin-top: 5px;">
+        <button onclick="processarManual()" style="flex: 2; padding: 12px; background-color: #003399; color: white; border: none; border-radius: 8px; font-weight: bold;">GRAVAR DADOS</button>
+        <button onclick="alternarEntradaManual()" style="flex: 1; padding: 12px; background-color: #666; color: white; border: none; border-radius: 8px;">VOLTAR</button>
     </div>
 </div>
     
@@ -99,43 +100,57 @@
 function alternarEntradaManual() {
     const container = document.getElementById('manual-input-container');
     const btnManual = document.getElementById('btnManual');
-    const inputManual = document.getElementById('manual-code');
-
+    
     if (container.style.display === "none") {
         container.style.display = "flex";
         btnManual.style.display = "none";
-        inputManual.focus(); // Foca no campo automaticamente
+        document.getElementById('m-codigo').focus();
     } else {
         container.style.display = "none";
         btnManual.style.display = "inline-block";
-        inputManual.value = ""; // Limpa ao sair
     }
 }
 
-// Função para processar o que foi digitado
 function processarManual() {
-    const inputManual = document.getElementById('manual-code');
-    const codigo = inputManual.value.trim().toUpperCase();
+    // Coleta os valores do formulário
+    const codigo = document.getElementById('m-codigo').value.trim().toUpperCase();
+    const destino = document.getElementById('m-destino').value.trim().toUpperCase();
+    const qtdTotal = document.getElementById('m-total').value;
+    const qtdInspec = document.getElementById('m-inspec').value;
 
-    if (codigo.length < 3) {
-        alert("Por favor, digite um código válido.");
+    // Validação básica
+    if (!codigo || !destino || !qtdTotal || !qtdInspec) {
+        alert("Por favor, preencha TODOS os campos antes de gravar.");
         return;
     }
 
-    // Envia o código para a mesma função que o QR Code utiliza
-    onScanSuccess(codigo);
+    // Define o tipo baseado no código (lógica que você já usa no script)
+    const tipo = codigo.startsWith("577") ? "577" : "SACO";
 
-    // Limpa e fecha o campo após o envio
-    inputManual.value = "";
+    // Monta o objeto de dados exatamente como o scanner faz
+    const dadosManuais = {
+        data: new Date().toLocaleString('pt-BR'),
+        cte: codigo,
+        destino: destino,
+        qtdTotal: qtdTotal,
+        qtdInspec: qtdInspec,
+        tipo: tipo,
+        nome: document.getElementById('nome').value, // Pega do cabeçalho
+        re: document.getElementById('re').value,     // Pega do cabeçalho
+        confirmarRepetido: false
+    };
+
+    // Envia diretamente para a função de comunicação com a planilha
+    // Nota: Certifique-se que o nome da função que envia para o Google é 'enviarParaPlanilha'
+    enviarParaPlanilha(dadosManuais);
+
+    // Limpa os campos e fecha o painel manual
+    document.getElementById('m-codigo').value = "";
+    document.getElementById('m-destino').value = "";
+    document.getElementById('m-total').value = "";
+    document.getElementById('m-inspec').value = "";
     alternarEntradaManual();
 }
-
-// Permite enviar ao apertar a tecla "Enter" no teclado
-document.getElementById('manual-code').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') {
-        processarManual();
-    }
-});
 
     // Adicione isso dentro da tag <script>, logo após as definições de scriptURL
 window.onload = function() {
@@ -358,6 +373,7 @@ enviarParaPlanilha(dados);
 
 </body>
 </html>
+
 
 
 
