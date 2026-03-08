@@ -124,7 +124,7 @@
 
     // Se começar com 577, remove o prefixo e pega os 6 números seguintes
     if (codigoRaw.startsWith("577")) {
-        cteFormatado = codigoRaw.substring(3, 9); // Pega do índice 3 ao 9 (6 dígitos)
+        cteFormatado = codigoRaw.substring(3, 11); // Pega do índice 3 ao 11 (8 dígitos)
     } else {
         cteFormatado = codigoRaw;
     }
@@ -171,7 +171,7 @@
 
         if (decodedText.startsWith("577")) {
             tipo = "577";
-            cte = decodedText.substring(3, 9);
+            cte = decodedText.substring(3, 11);
             destino = partes[7] || "N/I";
             qtdTotal = partes[9] || "0";
         } else {
@@ -207,6 +207,7 @@
 </script>
 </body>
 </html>
+
 
 
 
