@@ -4,46 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#003399">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/jpeg" href="x-ray.png">
-    <link rel="apple-touch-icon" href="x-ray.png">
-    <link rel="manifest" href="manifest.json">
     <title>Scanner F-CGO-004 - Azul Cargo</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 15px; background-color: #f0f2f5; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
         h2 { color: #003399; margin-bottom: 5px; }
-        
-        /* Contador e Barra de Progresso */
         .count-box { background: #eef2ff; padding: 10px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #d1d9e6; }
         .progress-container { background-color: #ddd; border-radius: 10px; height: 10px; width: 100%; margin-top: 8px; overflow: hidden; }
         .progress-bar { height: 100%; width: 0%; background-color: #28a745; transition: width 0.3s; }
-
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         #reader { width: 100%; border-radius: 12px; margin-top: 10px; background: #000; }
-        
         button { width: 100%; padding: 15px; margin-top: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.2s; }
         .btn-camera { background-color: #003399; color: white; }
-        .btn-pdf { background-color: #d9534f; color: white; }
+        .btn-pdf { background-color: #28a745; color: white; }
         .btn-limpar { background-color: #f0ad4e; color: white; }
-        
-               /* Botão quando está desabilitado */
-        .btn-limpar:disabled {
-          background-color: #cccccc;
-          cursor: not-allowed;
-          opacity: 0.7;
-         }
-
-         #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
-        
+        .btn-limpar:disabled { background-color: #cccccc; cursor: not-allowed; opacity: 0.7; }
+        #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h2>Scanner Azul Cargo</h2>
-    <p style="font-size: 12px; margin-bottom: 15px;">Inspecção de Carga F-CGO-004</p>
+    <p style="font-size: 12px; margin-bottom: 15px;">Inspeção de Carga F-CGO-004</p>
 
     <div class="count-box">
         <strong>Itens Bipados:</strong> <span id="contagem">0</span> / 21
@@ -56,173 +41,158 @@
     <input type="text" id="re" placeholder="RE">
     
     <div id="reader"></div>
-    
-   <button onclick="alternarEntradaManual()" id="btnManual" 
-        style="margin-top: 15px; background: none; border: 1px solid #003399; color: #003399; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold;">
-    ⌨️ Entrada Manual de Dados
-</button>
 
-<div id="manual-input-container" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
-    
-    <input type="text" id="m-codigo" placeholder="CTE ou Saco Coletor (B/C)" style="width: 90%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
-    
-    <input type="text" id="m-destino" placeholder="Destino (D)" style="width: 90%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
-    
-    <div style="display: flex; gap: 5px; width: 95%; justify-content: center;">
-        <input type="number" id="m-total" placeholder="Qtd Total (E)" style="width: 45%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
-        <input type="number" id="m-inspec" placeholder="Qtd Inspec (F)" style="width: 45%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
-    </div>
+    <button onclick="alternarEntradaManual()" id="btnManual" 
+            style="margin-top: 15px; background: none; border: 1px solid #003399; color: #003399; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold;">
+        ⌨️ Entrada Manual de Dados
+    </button>
 
-    <div style="display: flex; gap: 10px; width: 95%; margin-top: 5px;">
-        <button onclick="processarManual()" style="flex: 2; padding: 12px; background-color: #003399; color: white; border: none; border-radius: 8px; font-weight: bold;">GRAVAR DADOS</button>
-        <button onclick="alternarEntradaManual()" style="flex: 1; padding: 12px; background-color: #666; color: white; border: none; border-radius: 8px;">VOLTAR</button>
+    <div id="manual-input-container" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; gap: 10px; background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #ddd;">
+        <input type="text" id="m-codigo" placeholder="CTE ou Saco Coletor (B/C)" style="width: 90%; padding: 10px;">
+        <input type="text" id="m-destino" placeholder="Destino (D)" style="width: 90%; padding: 10px;">
+        <div style="display: flex; gap: 5px; width: 95%; justify-content: center;">
+            <input type="number" id="m-total" placeholder="Qtd Total (E)" style="width: 45%; padding: 10px;">
+            <input type="number" id="m-inspec" placeholder="Qtd Inspec (F)" style="width: 45%; padding: 10px;">
+        </div>
+        <div style="display: flex; gap: 10px; width: 95%;">
+            <button onclick="processarManual()" style="flex: 2; background-color: #003399; color: white; padding: 10px;">GRAVAR DADOS</button>
+            <button onclick="alternarEntradaManual()" style="flex: 1; background-color: #666; color: white; padding: 10px;">VOLTAR</button>
+        </div>
     </div>
-</div>
     
     <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LER QRCODE</button>
-    
     <div id="status"></div>
 
     <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
     
-    <button class="btn-pdf" style="background-color: #28a745;" onclick="encerrarTurno()">ENCERRAR TURNO</button>
+    <button class="btn-pdf" onclick="encerrarTurno()">ENCERRAR TURNO</button>
     <button id="btnLimpar" class="btn-limpar" onclick="confirmarLimpeza()" disabled>LIMPAR PLANILHA</button>
 </div>
 
 <script>
-    // --- CONFIGURAÇÃO ---
-    // Use a URL correta da sua última implementação do Google Apps Script
     const scriptURL = 'https://script.google.com/macros/s/AKfycbx30Iexme5VNbrHuCvhtO4Xb1tAV9-n11SR5BoZ8JzRGCSCHebDvTB_zyZQNt4Wm5pa8g/exec'; 
-    const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
 
-    // Sincronização inicial ao carregar a página
     window.onload = function() {
         fetch(scriptURL + '?action=getContagem')
         .then(r => r.text())
         .then(res => { atualizarContador(res); });
     };
 
-    // --- FUNÇÃO GLOBAL DE ENVIO (Esta é a chave para o botão Gravar funcionar) ---
+    function atualizarContador(valor) {
+        const n = parseInt(valor) || 0;
+        document.getElementById('contagem').innerText = n;
+        const barra = document.getElementById('barra');
+        const btnLimpar = document.getElementById('btnLimpar');
+        barra.style.width = (n / 21 * 100) + "%";
+        btnLimpar.disabled = (n < 21);
+        barra.style.backgroundColor = n >= 21 ? "#003399" : (n >= 18 ? "#d9534f" : "#28a745");
+    }
+
+    // --- FUNÇÃO DE ENVIO UNIFICADA ---
     function enviarParaPlanilha(objetoDados) {
         document.getElementById('status').innerText = "Enviando...";
-        
         fetch(scriptURL, { method: 'POST', body: JSON.stringify(objetoDados) })
         .then(r => r.text())
         .then(res => {
             if (res === "REPETIDO") {
-                if (confirm(`O código ${objetoDados.cte} já está na planilha. Registrar novamente?`)) {
+                if (confirm("Código já registrado. Enviar novamente?")) {
                     objetoDados.confirmarRepetido = true;
                     enviarParaPlanilha(objetoDados);
-                } else {
-                    document.getElementById('status').innerText = "Cancelado";
-                }
+                } else { document.getElementById('status').innerText = "Cancelado"; }
             } else if (res === "CHEIA") {
-                alert("Limite de 21 linhas atingido!");
-                document.getElementById('status').innerText = "Planilha Cheia";
+                alert("Planilha cheia!");
             } else {
                 atualizarContador(res);
                 document.getElementById('status').innerText = "✅ Registrado (" + res + "/21)";
             }
-        })
-        .catch(err => {
-            document.getElementById('status').innerText = "Erro ao enviar";
-            console.error(err);
-        });
+        }).catch(err => { document.getElementById('status').innerText = "Erro de conexão"; });
     }
 
+    // --- ENTRADA MANUAL ---
     function alternarEntradaManual() {
         const container = document.getElementById('manual-input-container');
         const btnManual = document.getElementById('btnManual');
-        if (container.style.display === "none") {
-            container.style.display = "flex";
-            btnManual.style.display = "none";
-            document.getElementById('m-codigo').focus();
-        } else {
-            container.style.display = "none";
-            btnManual.style.display = "inline-block";
-        }
+        container.style.display = container.style.display === "none" ? "flex" : "none";
+        btnManual.style.display = container.style.display === "none" ? "inline-block" : "none";
     }
 
     function processarManual() {
-        const codigo = document.getElementById('m-codigo').value.trim().toUpperCase();
-        const destino = document.getElementById('m-destino').value.trim().toUpperCase();
-        const qtdTotal = document.getElementById('m-total').value;
-        const qtdInspec = document.getElementById('m-inspec').value;
-        const nome = document.getElementById('nome').value;
-        const re = document.getElementById('re').value;
-
-        if (!codigo || !destino || !qtdTotal || !qtdInspec || !nome || !re) {
-            alert("Por favor, preencha TODOS os campos (inclusive Nome e RE no topo).");
-            return;
-        }
-
-        const tipo = codigo.startsWith("577") ? "577" : "SACO";
-        const dadosManuais = {
+        const dados = {
             data: new Date().toLocaleString('pt-BR'),
-            cte: codigo,
-            destino: destino,
-            qtdTotal: qtdTotal,
-            qtdInspec: qtdInspec,
-            tipo: tipo,
-            nome: nome,
-            re: re,
+            cte: document.getElementById('m-codigo').value.trim().toUpperCase(),
+            destino: document.getElementById('m-destino').value.trim().toUpperCase(),
+            qtdTotal: document.getElementById('m-total').value,
+            qtdInspec: document.getElementById('m-inspec').value,
+            tipo: document.getElementById('m-codigo').value.startsWith("577") ? "577" : "SACO",
+            nome: document.getElementById('nome').value,
+            re: document.getElementById('re').value,
             confirmarRepetido: false
         };
-
-        enviarParaPlanilha(dadosManuais); // Agora a função está visível aqui
-
-        // Limpa os campos e fecha
-        document.getElementById('m-codigo').value = "";
-        document.getElementById('m-destino').value = "";
-        document.getElementById('m-total').value = "";
-        document.getElementById('m-inspec').value = "";
+        if(!dados.cte || !dados.nome || !dados.re) { alert("Preencha todos os campos!"); return; }
+        enviarParaPlanilha(dados);
         alternarEntradaManual();
     }
 
-    // ... (restante das funções: toggleCamera, onScanSuccess, atualizarContador, encerrarTurno) ...
-    // Certifique-se de que dentro do onScanSuccess você chame enviarParaPlanilha(dados)
-</script>
+    // --- QR CODE ---
+    function toggleCamera() {
+        if (!cameraAtiva) {
+            if(!document.getElementById('nome').value || !document.getElementById('re').value) {
+                alert("Preencha Nome e RE primeiro."); return;
+            }
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess)
+            .then(() => { cameraAtiva = true; document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA"; });
+        } else { pararCamera(); }
+    }
 
+    function pararCamera() {
+        if (html5QrCode) {
+            html5QrCode.stop().then(() => { cameraAtiva = false; document.getElementById('btnAcao').innerText = "LER QRCODE"; });
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        pararCamera();
+        let partes = decodedText.split('|');
+        let cte, destino, qtdTotal, tipo;
+
+        if (decodedText.startsWith("577")) {
+            tipo = "577";
+            cte = decodedText.substring(0, 11);
+            destino = partes[1] || "N/I";
+            qtdTotal = partes[2] || "0";
+        } else {
+            tipo = "SACO";
+            cte = partes[0];
+            destino = partes[2] || "N/I";
+            qtdTotal = "1";
+        }
+
+        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes inspecionados?`, "1");
+        if (qtdInspec === null) return;
+
+        enviarParaPlanilha({
+            data: new Date().toLocaleString('pt-BR'),
+            cte: cte, destino: destino, qtdTotal: qtdTotal, qtdInspec: qtdInspec,
+            tipo: tipo, nome: document.getElementById('nome').value, re: document.getElementById('re').value,
+            confirmarRepetido: false
+        });
+    }
+
+    function confirmarLimpeza() {
+        if (confirm("Limpar planilha?")) {
+            fetch(scriptURL + '?action=limpar').then(() => { atualizarContador(0); });
+        }
+    }
+
+    function encerrarTurno() {
+        if (confirm("Encerrar turno e arquivar?")) {
+            const url = `${scriptURL}?action=encerrar&nome=${encodeURIComponent(document.getElementById('nome').value)}&re=${encodeURIComponent(document.getElementById('re').value)}`;
+            fetch(url).then(r => r.text()).then(res => { if(res==="OK") { alert("Arquivado!"); atualizarContador(0); }});
+        }
+    }
+</script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
