@@ -119,21 +119,32 @@
     }
 
     function processarManual() {
-        const dados = {
-            data: new Date().toLocaleString('pt-BR'),
-            cte: document.getElementById('m-codigo').value.trim().toUpperCase(),
-            destino: document.getElementById('m-destino').value.trim().toUpperCase(),
-            qtdTotal: document.getElementById('m-total').value,
-            qtdInspec: document.getElementById('m-inspec').value,
-            tipo: document.getElementById('m-codigo').value.startsWith("577") ? "577" : "SACO",
-            nome: document.getElementById('nome').value,
-            re: document.getElementById('re').value,
-            confirmarRepetido: false
-        };
-        if(!dados.cte || !dados.nome || !dados.re) { alert("Preencha todos os campos!"); return; }
-        enviarParaPlanilha(dados);
-        alternarEntradaManual();
+    let codigoRaw = document.getElementById('m-codigo').value.trim().toUpperCase();
+    let cteFormatado;
+
+    // Se começar com 577, remove o prefixo e pega os 6 números seguintes
+    if (codigoRaw.startsWith("577")) {
+        cteFormatado = codigoRaw.substring(3, 9); // Pega do índice 3 ao 9 (6 dígitos)
+    } else {
+        cteFormatado = codigoRaw;
     }
+
+    const dados = {
+        data: new Date().toLocaleString('pt-BR'),
+        cte: cteFormatado,
+        destino: document.getElementById('m-destino').value.trim().toUpperCase(),
+        qtdTotal: document.getElementById('m-total').value,
+        qtdInspec: document.getElementById('m-inspec').value,
+        tipo: codigoRaw.startsWith("577") ? "577" : "SACO",
+        nome: document.getElementById('nome').value,
+        re: document.getElementById('re').value,
+        confirmarRepetido: false
+    };
+    
+    if(!dados.cte || !dados.nome || !dados.re) { alert("Preencha todos os campos!"); return; }
+    enviarParaPlanilha(dados);
+    alternarEntradaManual();
+}
 
     // --- QR CODE ---
     function toggleCamera() {
@@ -160,7 +171,7 @@
 
         if (decodedText.startsWith("577")) {
             tipo = "577";
-            cte = decodedText.substring(0, 11);
+            cte = decodedText.substring(3, 9);
             destino = partes[7] || "N/I";
             qtdTotal = partes[9] || "0";
         } else {
@@ -196,5 +207,6 @@
 </script>
 </body>
 </html>
+
 
 
