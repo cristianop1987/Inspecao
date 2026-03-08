@@ -56,6 +56,28 @@
     <input type="text" id="re" placeholder="RE">
     
     <div id="reader"></div>
+    
+    <button onclick="alternarEntradaManual()" id="btnManual" 
+        style="margin-top: 15px; background: none; border: 1px solid #003399; color: #003399; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 14px;">
+    ⌨️ Digitar Manualmente
+</button>
+
+<div id="manual-input-container" style="display: none; margin-top: 15px; flex-direction: column; align-items: center; gap: 10px;">
+    <input type="text" id="manual-code" placeholder="Digite o código aqui..." 
+           style="padding: 12px; border-radius: 8px; border: 2px solid #003399; width: 80%; font-size: 16px; text-transform: uppercase;">
+    
+    <div style="display: flex; gap: 10px; width: 80%;">
+        <button onclick="processarManual()" 
+                style="flex: 2; padding: 12px; background-color: #003399; color: white; border: none; border-radius: 8px; font-weight: bold;">
+            OK
+        </button>
+        <button onclick="alternarEntradaManual()" 
+                style="flex: 1; padding: 12px; background-color: #ccc; border: none; border-radius: 8px;">
+            Sair
+        </button>
+    </div>
+</div>
+    
     <button class="btn-camera" id="btnAcao" onclick="toggleCamera()">LER QRCODE</button>
     
     <div id="status"></div>
@@ -72,6 +94,48 @@
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
+
+    // Função para mostrar/esconder o campo de digitação
+function alternarEntradaManual() {
+    const container = document.getElementById('manual-input-container');
+    const btnManual = document.getElementById('btnManual');
+    const inputManual = document.getElementById('manual-code');
+
+    if (container.style.display === "none") {
+        container.style.display = "flex";
+        btnManual.style.display = "none";
+        inputManual.focus(); // Foca no campo automaticamente
+    } else {
+        container.style.display = "none";
+        btnManual.style.display = "inline-block";
+        inputManual.value = ""; // Limpa ao sair
+    }
+}
+
+// Função para processar o que foi digitado
+function processarManual() {
+    const inputManual = document.getElementById('manual-code');
+    const codigo = inputManual.value.trim().toUpperCase();
+
+    if (codigo.length < 3) {
+        alert("Por favor, digite um código válido.");
+        return;
+    }
+
+    // Envia o código para a mesma função que o QR Code utiliza
+    onScanSuccess(codigo);
+
+    // Limpa e fecha o campo após o envio
+    inputManual.value = "";
+    alternarEntradaManual();
+}
+
+// Permite enviar ao apertar a tecla "Enter" no teclado
+document.getElementById('manual-code').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        processarManual();
+    }
+});
 
     // Adicione isso dentro da tag <script>, logo após as definições de scriptURL
 window.onload = function() {
@@ -294,6 +358,7 @@ enviarParaPlanilha(dados);
 
 </body>
 </html>
+
 
 
 
