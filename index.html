@@ -161,8 +161,8 @@
         if (decodedText.startsWith("577")) {
             tipo = "577";
             cte = decodedText.substring(0, 11);
-            destino = partes[1] || "N/I";
-            qtdTotal = partes[2] || "0";
+            destino = partes[7] || "N/I";
+            qtdTotal = partes[9] || "0";
         } else {
             tipo = "SACO";
             cte = partes[0];
@@ -196,3 +196,4 @@
 </script>
 </body>
 </html>
+
