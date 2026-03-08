@@ -120,12 +120,26 @@
 
     function processarManual() {
     let codigoRaw = document.getElementById('m-codigo').value.trim().toUpperCase();
-    let cteFormatado;
+    let cteFormatado = codigoRaw;
+    let tipo = "SACO"; // Padrão inicial
 
-    // Se começar com 577, remove o prefixo e pega os 6 números seguintes
-    if (codigoRaw.startsWith("577")) {
-        cteFormatado = codigoRaw.substring(3, 11); // Pega do índice 3 ao 11 (8 dígitos)
-    } else {
+    // 1. LÓGICA PARA TIPO "577"
+    // Verifica se começa com 577 OU se tem 8 dígitos numéricos (padrão após o 577)
+    if (codigoRaw.startsWith("577") || (/^\d{8}$/.test(codigoRaw))) {
+        tipo = "577";
+        
+        if (codigoRaw.startsWith("577")) {
+            // Se digitou 577 + números, remove o 577 e pega os 8 dígitos seguintes
+            cteFormatado = codigoRaw.substring(3, 11); 
+        } else {
+            // Se digitou os 8 dígitos direto, pega apenas os 8 primeiros conforme sua regra
+            cteFormatado = codigoRaw.substring(0, 8);
+        }
+    } 
+    // 2. LÓGICA PARA TIPO "SACO"
+    // Verifica se começa com letras seguidas de "-" ou apenas letras iniciais (Ex: FOR- ou FOR05)
+    else if (/[A-Z]{2,}/.test(codigoRaw)) {
+        tipo = "SACO";
         cteFormatado = codigoRaw;
     }
 
@@ -135,14 +149,25 @@
         destino: document.getElementById('m-destino').value.trim().toUpperCase(),
         qtdTotal: document.getElementById('m-total').value,
         qtdInspec: document.getElementById('m-inspec').value,
-        tipo: codigoRaw.startsWith("577") ? "577" : "SACO",
+        tipo: tipo,
         nome: document.getElementById('nome').value,
         re: document.getElementById('re').value,
         confirmarRepetido: false
     };
-    
-    if(!dados.cte || !dados.nome || !dados.re) { alert("Preencha todos os campos!"); return; }
+
+    // Validação de campos obrigatórios
+    if (!dados.cte || !dados.destino || !dados.nome || !dados.re) {
+        alert("Por favor, preencha todos os campos obrigatórios.");
+        return;
+    }
+
     enviarParaPlanilha(dados);
+
+    // Limpa os campos e fecha o formulário
+    document.getElementById('m-codigo').value = "";
+    document.getElementById('m-destino').value = "";
+    document.getElementById('m-total').value = "";
+    document.getElementById('m-inspec').value = "";
     alternarEntradaManual();
 }
 
@@ -207,6 +232,7 @@
 </script>
 </body>
 </html>
+
 
 
 
