@@ -91,288 +91,103 @@
 
 <script>
     // --- CONFIGURAÇÃO ---
+    // Use a URL correta da sua última implementação do Google Apps Script
     const scriptURL = 'https://script.google.com/macros/s/AKfycbx30Iexme5VNbrHuCvhtO4Xb1tAV9-n11SR5BoZ8JzRGCSCHebDvTB_zyZQNt4Wm5pa8g/exec'; 
     const sheetID = '1W8tabvUvJ9v2MBml0vbBlpBI12cdBDXAU5jQLrfhVik';
     let html5QrCode;
     let cameraAtiva = false;
 
-    // Função para mostrar/esconder o campo de digitação
-function alternarEntradaManual() {
-    const container = document.getElementById('manual-input-container');
-    const btnManual = document.getElementById('btnManual');
-    
-    if (container.style.display === "none") {
-        container.style.display = "flex";
-        btnManual.style.display = "none";
-        document.getElementById('m-codigo').focus();
-    } else {
-        container.style.display = "none";
-        btnManual.style.display = "inline-block";
-    }
-}
-
-function processarManual() {
-    // Coleta os valores do formulário
-    const codigo = document.getElementById('m-codigo').value.trim().toUpperCase();
-    const destino = document.getElementById('m-destino').value.trim().toUpperCase();
-    const qtdTotal = document.getElementById('m-total').value;
-    const qtdInspec = document.getElementById('m-inspec').value;
-
-    // Validação básica
-    if (!codigo || !destino || !qtdTotal || !qtdInspec) {
-        alert("Por favor, preencha TODOS os campos antes de gravar.");
-        return;
-    }
-
-    // Define o tipo baseado no código (lógica que você já usa no script)
-    const tipo = codigo.startsWith("577") ? "577" : "SACO";
-
-    // Monta o objeto de dados exatamente como o scanner faz
-    const dadosManuais = {
-        data: new Date().toLocaleString('pt-BR'),
-        cte: codigo,
-        destino: destino,
-        qtdTotal: qtdTotal,
-        qtdInspec: qtdInspec,
-        tipo: tipo,
-        nome: document.getElementById('nome').value, // Pega do cabeçalho
-        re: document.getElementById('re').value,     // Pega do cabeçalho
-        confirmarRepetido: false
+    // Sincronização inicial ao carregar a página
+    window.onload = function() {
+        fetch(scriptURL + '?action=getContagem')
+        .then(r => r.text())
+        .then(res => { atualizarContador(res); });
     };
 
-    // Envia diretamente para a função de comunicação com a planilha
-    // Nota: Certifique-se que o nome da função que envia para o Google é 'enviarParaPlanilha'
-    enviarParaPlanilha(dadosManuais);
-
-    // Limpa os campos e fecha o painel manual
-    document.getElementById('m-codigo').value = "";
-    document.getElementById('m-destino').value = "";
-    document.getElementById('m-total').value = "";
-    document.getElementById('m-inspec').value = "";
-    alternarEntradaManual();
-}
-
-    // Adicione isso dentro da tag <script>, logo após as definições de scriptURL
-window.onload = function() {
-    // Busca a contagem atual da planilha ao iniciar
-    fetch(scriptURL + '?action=getContagem')
-    .then(r => r.text())
-    .then(res => {
-        atualizarContador(res);
-    });
-};
-
-function atualizarContador(valor) {
-    const n = parseInt(valor);
-    document.getElementById('contagem').innerText = n;
-    
-    const porcentagem = (n / 21) * 100;
-    const barra = document.getElementById('barra');
-    const botaoLimpar = document.getElementById('btnLimpar');
-    
-    barra.style.width = porcentagem + "%";
-    
-    // CORREÇÃO: Habilita o botão se a planilha já estiver com 21 ou mais
-    if (n >= 21) {
-        botaoLimpar.disabled = false;
-        barra.style.backgroundColor = "#003399";
-    } else {
-        botaoLimpar.disabled = true;
-        if (n >= 18) barra.style.backgroundColor = "#d9534f";
-        else if (n >= 10) barra.style.backgroundColor = "#f0ad4e";
-        else barra.style.backgroundColor = "#28a745";
-    }
-}
-
-    function toggleCamera() {
-        if (!cameraAtiva) {
-            if(!document.getElementById('nome').value || !document.getElementById('re').value) {
-                alert("Por favor, preencha o Nome e RE."); return;
-            }
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess)
-            .then(() => {
-                cameraAtiva = true;
-                document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA";
-            });
-        } else { pararCamera(); }
-    }
-
-    function pararCamera() {
-        if (html5QrCode) {
-            html5QrCode.stop().then(() => {
-                cameraAtiva = false;
-                document.getElementById('btnAcao').innerText = "LER QRCODE";
-            }).catch(() => { cameraAtiva = false; });
-        }
-    }
-
-    function onScanSuccess(decodedText) {
-    pararCamera();
-    
-    let cte, destino, qtdTotal, tipo;
-    const texto = decodedText.trim();
-    const partes = texto.split('|');
-
-    // 1. VERIFICA SE É O PADRÃO DE ORIGEM (Ex: FOR-0013339 ou VIX-...)
-    // Se começar com letra e tiver pipes, tratamos como o novo padrão
-    if (texto.match(/^[A-Z]/) && partes.length > 1) {
-        tipo = "SACO";
-        cte = partes[0]; 
+    // --- FUNÇÃO GLOBAL DE ENVIO (Esta é a chave para o botão Gravar funcionar) ---
+    function enviarParaPlanilha(objetoDados) {
+        document.getElementById('status').innerText = "Enviando...";
         
-        // Busca o destino: procuramos o índice que contenha "SACO" ou "COLETOR"
-        let idxSaco = partes.findIndex(p => p.toUpperCase().includes("SACO"));
-        
-        if (idxSaco !== -1 && idxSaco >= 2) {
-            // Se achou "SACO", o destino está duas posições antes (pulando a data)
-            destino = partes[idxSaco - 2]; 
-        } else {
-            // Caso a estrutura varie, tenta pegar a 3ª parte (índice 2) que é o padrão
-            destino = partes[2] || "N/I";
-        }
-        qtdTotal = "1";
-    } 
-    // 2. VERIFICA SE É O PADRÃO ANTIGO (Começa com 577)
-    else if (texto.startsWith("577")) {
-        tipo = "577";
-        let cteMatch = texto.match(/577(\d{8})/);
-        let rotaMatch = texto.match(/[A-Z0-9]{3,7}-([A-Z0-9]{3,7})\|(\d+)\|/);
-        
-        cte = cteMatch ? cteMatch[1] : texto.substring(0, 11);
-        destino = rotaMatch ? rotaMatch[1] : "N/I"; 
-        qtdTotal = rotaMatch ? rotaMatch[2] : "0";
-    } 
-    else {
-        alert("Padrão não reconhecido: " + texto);
-        return;
-    }
-
-    let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes: ${qtdTotal}\n\nVolumes inspecionados?`, "1");
-    if (qtdInspec === null) return;
-
-    // Dentro de onScanSuccess...
-const dados = {
-    data: new Date().toLocaleString('pt-BR'), 
-    cte: cte, 
-    destino: destino, 
-    qtdTotal: qtdTotal, 
-    qtdInspec: qtdInspec,
-    tipo: tipo,
-    nome: document.getElementById('nome').value, 
-    re: document.getElementById('re').value,
-    confirmarRepetido: false // Padrão é falso
-};
-
-function enviarParaPlanilha(objetoDados) {
-    document.getElementById('status').innerText = "Enviando...";
-    
-    fetch(scriptURL, { method: 'POST', body: JSON.stringify(objetoDados) })
-    .then(r => r.text())
-    .then(res => {
-        if (res === "REPETIDO") {
-            if (confirm(`O código ${cte} já está na planilha.\nRegistrar novamente?`)) {
-                objetoDados.confirmarRepetido = true; // Ativa a permissão
-                enviarParaPlanilha(objetoDados); // Tenta de novo
-            } else {
-                document.getElementById('status').innerText = "Cancelado";
-            }
-        } else if (res === "CHEIA") {
-            alert("Limite de 21 linhas atingido!");
-        } else {
-            atualizarContador(res);
-            document.getElementById('status').innerText = "✅ Registrado (" + res + "/21)";
-        }
-    });
-}
-
-enviarParaPlanilha(dados);
-}
-
-    function atualizarContador(valor) {
-        const n = parseInt(valor);
-        document.getElementById('contagem').innerText = n;
-        const porcentagem = (n / 21) * 100;
-        const barra = document.getElementById('barra');
-        barra.style.width = porcentagem + "%";
-        
-        if(n >= 18) barra.style.backgroundColor = "#d9534f";
-        else if(n >= 10) barra.style.backgroundColor = "#f0ad4e";
-        else barra.style.backgroundColor = "#28a745";
-    }
-
-
-    function atualizarContador(valor) {
-    const n = parseInt(valor);
-    document.getElementById('contagem').innerText = n;
-    
-    const porcentagem = (n / 21) * 100;
-    const barra = document.getElementById('barra');
-    const botaoLimpar = document.getElementById('btnLimpar');
-    
-    barra.style.width = porcentagem + "%";
-    
-    // Habilita o botão apenas se chegar em 21
-    if (n >= 21) {
-        botaoLimpar.disabled = false;
-        barra.style.backgroundColor = "#003399"; // Cor de "concluído"
-    } else {
-        botaoLimpar.disabled = true;
-        // Cores da barra conforme o progresso
-        if (n >= 18) barra.style.backgroundColor = "#d9534f";
-        else if (n >= 10) barra.style.backgroundColor = "#f0ad4e";
-        else barra.style.backgroundColor = "#28a745";
-    }
-}
-
-    
-    function confirmarLimpeza() {
-        if (confirm("Tens a certeza que desejas LIMPAR os dados da planilha?")) {
-            const status = document.getElementById('status');
-            status.innerText = "Limpando...";
-            fetch(scriptURL + '?action=limpar', { mode: 'no-cors' })
-            .then(() => {
-                atualizarContador(0);
-                status.style.color = "green";
-                status.innerText = "✅ Planilha Limpa!";
-                setTimeout(() => { status.innerText = ""; }, 2500);
-            });
-        }
-    }
-
-    function encerrarTurno() {
-    const nome = document.getElementById('nome').value;
-    const re = document.getElementById('re').value;
-
-    if (!nome || !re) {
-        alert("Por favor, preencha Nome e RE para encerrar o turno.");
-        return;
-    }
-
-    if (confirm("Deseja realmente ENCERRAR O TURNO?\n\nIsso irá arquivar os dados atuais e limpar a planilha para o próximo funcionário.")) {
-        const status = document.getElementById('status');
-        status.innerText = "Encerrando turno e arquivando...";
-        
-        // Envia o comando para o Script arquivar e limpar
-        fetch(scriptURL + '?action=encerrar&nome=' + encodeURIComponent(nome) + '&re=' + encodeURIComponent(re))
+        fetch(scriptURL, { method: 'POST', body: JSON.stringify(objetoDados) })
         .then(r => r.text())
         .then(res => {
-            if (res === "OK") {
-                atualizarContador(0);
-                status.style.color = "green";
-                status.innerText = "✅ Turno Encerrado e Arquivado!";
-                alert("Turno encerrado com sucesso!");
-                setTimeout(() => { status.innerText = ""; }, 3000);
+            if (res === "REPETIDO") {
+                if (confirm(`O código ${objetoDados.cte} já está na planilha. Registrar novamente?`)) {
+                    objetoDados.confirmarRepetido = true;
+                    enviarParaPlanilha(objetoDados);
+                } else {
+                    document.getElementById('status').innerText = "Cancelado";
+                }
+            } else if (res === "CHEIA") {
+                alert("Limite de 21 linhas atingido!");
+                document.getElementById('status').innerText = "Planilha Cheia";
             } else {
-                alert("Erro ao encerrar: " + res);
+                atualizarContador(res);
+                document.getElementById('status').innerText = "✅ Registrado (" + res + "/21)";
             }
         })
-        .catch(err => alert("Erro de conexão: " + err));
+        .catch(err => {
+            document.getElementById('status').innerText = "Erro ao enviar";
+            console.error(err);
+        });
     }
-}
+
+    function alternarEntradaManual() {
+        const container = document.getElementById('manual-input-container');
+        const btnManual = document.getElementById('btnManual');
+        if (container.style.display === "none") {
+            container.style.display = "flex";
+            btnManual.style.display = "none";
+            document.getElementById('m-codigo').focus();
+        } else {
+            container.style.display = "none";
+            btnManual.style.display = "inline-block";
+        }
+    }
+
+    function processarManual() {
+        const codigo = document.getElementById('m-codigo').value.trim().toUpperCase();
+        const destino = document.getElementById('m-destino').value.trim().toUpperCase();
+        const qtdTotal = document.getElementById('m-total').value;
+        const qtdInspec = document.getElementById('m-inspec').value;
+        const nome = document.getElementById('nome').value;
+        const re = document.getElementById('re').value;
+
+        if (!codigo || !destino || !qtdTotal || !qtdInspec || !nome || !re) {
+            alert("Por favor, preencha TODOS os campos (inclusive Nome e RE no topo).");
+            return;
+        }
+
+        const tipo = codigo.startsWith("577") ? "577" : "SACO";
+        const dadosManuais = {
+            data: new Date().toLocaleString('pt-BR'),
+            cte: codigo,
+            destino: destino,
+            qtdTotal: qtdTotal,
+            qtdInspec: qtdInspec,
+            tipo: tipo,
+            nome: nome,
+            re: re,
+            confirmarRepetido: false
+        };
+
+        enviarParaPlanilha(dadosManuais); // Agora a função está visível aqui
+
+        // Limpa os campos e fecha
+        document.getElementById('m-codigo').value = "";
+        document.getElementById('m-destino').value = "";
+        document.getElementById('m-total').value = "";
+        document.getElementById('m-inspec').value = "";
+        alternarEntradaManual();
+    }
+
+    // ... (restante das funções: toggleCamera, onScanSuccess, atualizarContador, encerrarTurno) ...
+    // Certifique-se de que dentro do onScanSuccess você chame enviarParaPlanilha(dados)
 </script>
 
 </body>
 </html>
+
 
 
 
