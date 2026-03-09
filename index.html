@@ -192,47 +192,49 @@
     function onScanSuccess(decodedText) {
     pararCamera();
     
-    // Limpeza inicial de espaços e normalização
     const texto = decodedText.trim().toUpperCase();
     let partes = texto.split('|');
     let cte, destino, qtdTotal, tipo;
 
-    // --- LÓGICA PARA PADRÃO 577 ---
+    // --- NOVA LÓGICA PARA CTE (577) ---
     if (texto.startsWith("577")) {
         tipo = "577";
         
-        // 1. Tratamento do CTE: Remove "577" e hífens, pegando os 8 dígitos seguintes
-        cte = texto.replace(/577/g, "").replace(/-/g, "").substring(0, 8); 
-        
-        // 2. Tratamento do Destino: Pega tudo antes do primeiro "|" e divide pelos hífens
-        // Exemplo: "TRES2-FOR-CNF-BPS|..." -> partesRota será ["TRES2", "FOR", "CNF", "BPS"]
-        let rotaCompleta = partes[0];
-        let partesRota = rotaCompleta.split('-');
-        
-        // Pega sempre o último elemento da lista, não importa o tamanho (BPS, SSA09, RECT1, etc)
-        destino = partesRota[partesRota.length - 1]; 
-        
-        // 3. Quantidade Total: Geralmente é a segunda parte após o primeiro "|"
-        qtdTotal = partes[1] || "0";
+        // 1. CTE: Remove o "577" inicial e pega os 8 dígitos seguintes
+        // Se o código for "57770480373...", ele vai extrair "70480373"
+        cte = texto.substring(3, 11); 
+
+        // 2. VERIFICAÇÃO DE FORMATO:
+        // Se houver muitas partes (como o caso da imagem que tem mais de 10 campos)
+        if (partes.length > 10) {
+            // Destino está na Parte 7 (Índice 6 ou 7 dependendo da contagem, vamos usar o 7 conforme sua análise)
+            destino = partes[7] || "N/I"; 
+            // Quantidade Total está na Parte 9 (Índice 9)
+            qtdTotal = partes[9] || "1";
+        } else {
+            // Caso seja o padrão antigo de rota (Ex: FOR-VCP|1)
+            let rotaCompleta = partes[0];
+            let partesRota = rotaCompleta.split('-');
+            destino = partesRota[partesRota.length - 1]; 
+            qtdTotal = partes[1] || "1";
+        }
     } 
-    // --- LÓGICA PARA PADRÃO SACO ---
+    // --- LÓGICA PARA SACO ---
     else {
         tipo = "SACO";
-        cte = partes[0]; // O código do saco é a primeira parte
-        
-        // Aplica a mesma lógica de pegar o último segmento para o destino se houver hífens
+        cte = partes[0];
         let rotaSaco = partes[2] || "N/I";
         let partesRotaSaco = rotaSaco.split('-');
         destino = partesRotaSaco[partesRotaSaco.length - 1];
-        
         qtdTotal = "1";
     }
 
-    // Validação visual antes de enviar
+    // Limpeza final do destino (remove qualquer caractere estranho)
+    destino = destino.replace(/[^A-Z0-9]/g, "");
+
     let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes: ${qtdTotal}\n\nVolumes inspecionados?`, "1");
     if (qtdInspec === null) return;
 
-    // Envio unificado para a planilha
     enviarParaPlanilha({
         data: new Date().toLocaleString('pt-BR'),
         cte: cte,
@@ -261,6 +263,7 @@
 </script>
 </body>
 </html>
+
 
 
 
