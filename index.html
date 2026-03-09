@@ -190,32 +190,61 @@
     }
 
     function onScanSuccess(decodedText) {
-        pararCamera();
-        let partes = decodedText.split('|');
-        let cte, destino, qtdTotal, tipo;
+    pararCamera();
+    
+    // Limpeza inicial de espaços e normalização
+    const texto = decodedText.trim().toUpperCase();
+    let partes = texto.split('|');
+    let cte, destino, qtdTotal, tipo;
 
-        if (decodedText.startsWith("577")) {
-            tipo = "577";
-            cte = decodedText.substring(3, 11);
-            destino = partes[7] || "N/I";
-            qtdTotal = partes[9] || "0";
-        } else {
-            tipo = "SACO";
-            cte = partes[0];
-            destino = partes[3] || "N/I";
-            qtdTotal = "1";
-        }
-
-        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes inspecionados?`, "1");
-        if (qtdInspec === null) return;
-
-        enviarParaPlanilha({
-            data: new Date().toLocaleString('pt-BR'),
-            cte: cte, destino: destino, qtdTotal: qtdTotal, qtdInspec: qtdInspec,
-            tipo: tipo, nome: document.getElementById('nome').value, re: document.getElementById('re').value,
-            confirmarRepetido: false
-        });
+    // --- LÓGICA PARA PADRÃO 577 ---
+    if (texto.startsWith("577")) {
+        tipo = "577";
+        
+        // 1. Tratamento do CTE: Remove "577" e hífens, pegando os 8 dígitos seguintes
+        cte = texto.replace(/577/g, "").replace(/-/g, "").substring(0, 8); 
+        
+        // 2. Tratamento do Destino: Pega tudo antes do primeiro "|" e divide pelos hífens
+        // Exemplo: "TRES2-FOR-CNF-BPS|..." -> partesRota será ["TRES2", "FOR", "CNF", "BPS"]
+        let rotaCompleta = partes[0];
+        let partesRota = rotaCompleta.split('-');
+        
+        // Pega sempre o último elemento da lista, não importa o tamanho (BPS, SSA09, RECT1, etc)
+        destino = partesRota[partesRota.length - 1]; 
+        
+        // 3. Quantidade Total: Geralmente é a segunda parte após o primeiro "|"
+        qtdTotal = partes[1] || "0";
+    } 
+    // --- LÓGICA PARA PADRÃO SACO ---
+    else {
+        tipo = "SACO";
+        cte = partes[0]; // O código do saco é a primeira parte
+        
+        // Aplica a mesma lógica de pegar o último segmento para o destino se houver hífens
+        let rotaSaco = partes[2] || "N/I";
+        let partesRotaSaco = rotaSaco.split('-');
+        destino = partesRotaSaco[partesRotaSaco.length - 1];
+        
+        qtdTotal = "1";
     }
+
+    // Validação visual antes de enviar
+    let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes: ${qtdTotal}\n\nVolumes inspecionados?`, "1");
+    if (qtdInspec === null) return;
+
+    // Envio unificado para a planilha
+    enviarParaPlanilha({
+        data: new Date().toLocaleString('pt-BR'),
+        cte: cte,
+        destino: destino,
+        qtdTotal: qtdTotal,
+        qtdInspec: qtdInspec,
+        tipo: tipo,
+        nome: document.getElementById('nome').value,
+        re: document.getElementById('re').value,
+        confirmarRepetido: false
+    });
+}
 
     function confirmarLimpeza() {
         if (confirm("Limpar planilha?")) {
@@ -232,6 +261,7 @@
 </script>
 </body>
 </html>
+
 
 
 
