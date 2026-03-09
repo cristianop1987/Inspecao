@@ -191,58 +191,33 @@
 
     function onScanSuccess(decodedText) {
     pararCamera();
-    
-    const texto = decodedText.trim().toUpperCase();
-    let partes = texto.split('|');
+    let partes = decodedText.split('|');
     let cte, destino, qtdTotal, tipo;
 
-    // --- NOVA LÓGICA PARA CTE (577) ---
-    if (texto.startsWith("577")) {
+    if (decodedText.startsWith("577")) {
         tipo = "577";
-        
-        // 1. CTE: Remove o "577" inicial e pega os 8 dígitos seguintes
-        // Se o código for "57770480373...", ele vai extrair "70480373"
-        cte = texto.substring(3, 11); 
-
-        // 2. VERIFICAÇÃO DE FORMATO:
-        // Se houver muitas partes (como o caso da imagem que tem mais de 10 campos)
-        if (partes.length > 10) {
-            // Destino está na Parte 7 (Índice 6 ou 7 dependendo da contagem, vamos usar o 7 conforme sua análise)
-            destino = partes[7] || "N/I"; 
-            // Quantidade Total está na Parte 9 (Índice 9)
-            qtdTotal = partes[9] || "1";
-        } else {
-            // Caso seja o padrão antigo de rota (Ex: FOR-VCP|1)
-            let rotaCompleta = partes[0];
-            let partesRota = rotaCompleta.split('-');
-            destino = partesRota[partesRota.length - 1]; 
-            qtdTotal = partes[1] || "1";
-        }
-    } 
-    // --- LÓGICA PARA SACO ---
-    else {
+        // Remove o 577 e captura apenas os 8 dígitos seguintes (índice 3 ao 11)
+        cte = decodedText.substring(3, 11); 
+        destino = partes[7] || "N/I";
+        qtdTotal = partes[9] || "0";
+    } else {
         tipo = "SACO";
         cte = partes[0];
-        let rotaSaco = partes[2] || "N/I";
-        let partesRotaSaco = rotaSaco.split('-');
-        destino = partesRotaSaco[partesRotaSaco.length - 1];
+        destino = partes[3] || "N/I";
         qtdTotal = "1";
     }
 
-    // Limpeza final do destino (remove qualquer caractere estranho)
-    destino = destino.replace(/[^A-Z0-9]/g, "");
-
-    let qtdInspec = prompt(`ID/CTE: ${cte}\nDestino: ${destino}\nVolumes: ${qtdTotal}\n\nVolumes inspecionados?`, "1");
+    let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes inspecionados?`, "1");
     if (qtdInspec === null) return;
 
     enviarParaPlanilha({
         data: new Date().toLocaleString('pt-BR'),
-        cte: cte,
-        destino: destino,
-        qtdTotal: qtdTotal,
+        cte: cte, 
+        destino: destino, 
+        qtdTotal: qtdTotal, 
         qtdInspec: qtdInspec,
-        tipo: tipo,
-        nome: document.getElementById('nome').value,
+        tipo: tipo, 
+        nome: document.getElementById('nome').value, 
         re: document.getElementById('re').value,
         confirmarRepetido: false
     });
@@ -263,6 +238,7 @@
 </script>
 </body>
 </html>
+
 
 
 
