@@ -196,9 +196,14 @@
 
     if (decodedText.startsWith("577")) {
         tipo = "577";
-        // Remove o 577 e captura apenas os 8 dígitos seguintes (índice 3 ao 11)
+        // Remove o 577 e captura apenas os 8 dígitos seguintes
         cte = decodedText.substring(3, 11); 
-        destino = partes[7] || "N/I";
+        
+        // Pega a parte 7, e se houver hífens (ex: TRES2-FOR-CNF-BPS), pega só o último (BPS)
+        let destinoBruto = partes[7] || "N/I";
+        let destinoPartes = destinoBruto.split('-');
+        destino = destinoPartes[destinoPartes.length - 1].trim(); 
+
         qtdTotal = partes[9] || "0";
     } else {
         tipo = "SACO";
@@ -238,6 +243,7 @@
 </script>
 </body>
 </html>
+
 
 
 
