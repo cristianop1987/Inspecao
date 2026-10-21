@@ -72,8 +72,21 @@
 
 <script>
     const scriptURL = 'https://script.google.com/macros/s/AKfycbwQq3LaV-duUZzCRgoKwTdzWjBXaKiqPgDCMZU4RA6mTUV8-GHWV7j740IA_DImHwRpUA/exec'; 
-    let html5QrCode;
+    
+    // Declaração única limpa
+    let html5QrCode = null;
     let cameraAtiva = false;
+
+    // --- VARIÁVEIS DE ZOOM POR PINÇA ---
+    let zoomMin = 1;
+    let zoomMax = 1;
+    let zoomAtual = 1;
+    let zoomStep = 0.1;
+    let zoomDisponivel = false;
+    let distanciaInicialPinch = 0;
+    let zoomInicialPinch = 1;
+    let ultimoZoomAplicado = 0;
+    let aplicandoZoom = false;
 
     window.onload = function() {
         fetch(scriptURL + '?action=getContagem')
@@ -91,7 +104,6 @@
         barra.style.backgroundColor = n >= 21 ? "#003399" : (n >= 18 ? "#d9534f" : "#28a745");
     }
 
-    // --- FUNÇÃO DE ENVIO UNIFICADA ---
     function enviarParaPlanilha(objetoDados) {
         document.getElementById('status').innerText = "Enviando...";
         fetch(scriptURL, { method: 'POST', body: JSON.stringify(objetoDados) })
@@ -111,7 +123,6 @@
         }).catch(err => { document.getElementById('status').innerText = "Erro de conexão"; });
     }
 
-    // --- ENTRADA MANUAL ---
     function alternarEntradaManual() {
         const container = document.getElementById('manual-input-container');
         const btnManual = document.getElementById('btnManual');
@@ -120,70 +131,46 @@
     }
 
     function processarManual() {
-    let codigoRaw = document.getElementById('m-codigo').value.trim().toUpperCase();
-    let cteFormatado = codigoRaw;
-    let tipo = "SACO"; // Padrão inicial
+        let codigoRaw = document.getElementById('m-codigo').value.trim().toUpperCase();
+        let cteFormatado = codigoRaw;
+        let tipo = "SACO";
 
-    // 1. LÓGICA PARA TIPO "577"
-    // Verifica se começa com 577 OU se tem 8 dígitos numéricos (padrão após o 577)
-    if (codigoRaw.startsWith("577") || (/^\d{8}$/.test(codigoRaw))) {
-        tipo = "577";
-        
-        if (codigoRaw.startsWith("577")) {
-            // Se digitou 577 + números, remove o 577 e pega os 8 dígitos seguintes
-            cteFormatado = codigoRaw.substring(3, 11); 
-        } else {
-            // Se digitou os 8 dígitos direto, pega apenas os 8 primeiros conforme sua regra
-            cteFormatado = codigoRaw.substring(0, 8);
+        if (codigoRaw.startsWith("577") || (/^\d{8}$/.test(codigoRaw))) {
+            tipo = "577";
+            if (codigoRaw.startsWith("577")) {
+                cteFormatado = codigoRaw.substring(3, 11); 
+            } else {
+                cteFormatado = codigoRaw.substring(0, 8);
+            }
+        } else if (/[A-Z]{2,}/.test(codigoRaw)) {
+            tipo = "SACO";
+            cteFormatado = codigoRaw;
         }
-    } 
-    // 2. LÓGICA PARA TIPO "SACO"
-    // Verifica se começa com letras seguidas de "-" ou apenas letras iniciais (Ex: FOR- ou FOR05)
-    else if (/[A-Z]{2,}/.test(codigoRaw)) {
-        tipo = "SACO";
-        cteFormatado = codigoRaw;
+
+        const dados = {
+            data: new Date().toLocaleString('pt-BR'),
+            cte: cteFormatado,
+            destino: document.getElementById('m-destino').value.trim().toUpperCase(),
+            qtdTotal: document.getElementById('m-total').value,
+            qtdInspec: document.getElementById('m-inspec').value,
+            tipo: tipo,
+            nome: document.getElementById('nome').value,
+            re: document.getElementById('re').value,
+            confirmarRepetido: false
+        };
+
+        if (!dados.cte || !dados.destino || !dados.nome || !dados.re) {
+            alert("Por favor, preencha todos os campos obrigatórios.");
+            return;
+        }
+
+        enviarParaPlanilha(dados);
+        document.getElementById('m-codigo').value = "";
+        document.getElementById('m-destino').value = "";
+        document.getElementById('m-total').value = "";
+        document.getElementById('m-inspec').value = "";
+        alternarEntradaManual();
     }
-
-    const dados = {
-        data: new Date().toLocaleString('pt-BR'),
-        cte: cteFormatado,
-        destino: document.getElementById('m-destino').value.trim().toUpperCase(),
-        qtdTotal: document.getElementById('m-total').value,
-        qtdInspec: document.getElementById('m-inspec').value,
-        tipo: tipo,
-        nome: document.getElementById('nome').value,
-        re: document.getElementById('re').value,
-        confirmarRepetido: false
-    };
-
-    // Validação de campos obrigatórios
-    if (!dados.cte || !dados.destino || !dados.nome || !dados.re) {
-        alert("Por favor, preencha todos os campos obrigatórios.");
-        return;
-    }
-
-    enviarParaPlanilha(dados);
-
-    // Limpa os campos e fecha o formulário
-    document.getElementById('m-codigo').value = "";
-    document.getElementById('m-destino').value = "";
-    document.getElementById('m-total').value = "";
-    document.getElementById('m-inspec').value = "";
-    alternarEntradaManual();
-}
-  let html5QrCode;
-    let cameraAtiva = false;
-
-    // --- VARIÁVEIS DE ZOOM POR PINÇA ---
-    let zoomMin = 1;
-    let zoomMax = 1;
-    let zoomAtual = 1;
-    let zoomStep = 0.1;
-    let zoomDisponivel = false;
-    let distanciaInicialPinch = 0;
-    let zoomInicialPinch = 1;
-    let ultimoZoomAplicado = 0;
-    let aplicandoZoom = false;
 
     async function prepararZoomManual() {
         zoomDisponivel = false;
@@ -210,7 +197,7 @@
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    // Configuração dos ouvintes de toque na área do leitor
+    // Ouvintes de pinça configurados de forma segura
     setTimeout(() => {
         const areaCamera = document.getElementById('reader');
         if (areaCamera) {
@@ -247,7 +234,6 @@
         }
     }, 500);
 
-    // --- QR CODE ---
     function toggleCamera() {
         if (!cameraAtiva) {
             if(!document.getElementById('nome').value || !document.getElementById('re').value) {
@@ -259,12 +245,10 @@
                 formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
             });
 
+            // Configuração com qrbox seguro em pixels fixos para evitar erros de cálculo
             const config = {
                 fps: 20,
-                qrbox: (viewfinderWidth, viewfinderHeight) => {
-                    const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.78);
-                    return { width: size, height: size };
-                },
+                qrbox: { width: 260, height: 260 },
                 aspectRatio: 1.0,
                 videoConstraints: {
                     facingMode: "environment",
@@ -281,7 +265,7 @@
                 setTimeout(prepararZoomManual, 350);
             })
             .catch(err => {
-                console.error("Erro ao iniciar câmera, tentando modo básico:", err);
+                console.warn("Tentando modo alternativo de câmera...", err);
                 html5QrCode.start({ facingMode: "environment" }, {
                     fps: 15,
                     qrbox: { width: 250, height: 250 },
@@ -309,43 +293,39 @@
     }
 
     function onScanSuccess(decodedText) {
-    pararCamera();
-    let partes = decodedText.split('|');
-    let cte, destino, qtdTotal, tipo;
+        pararCamera();
+        let partes = decodedText.split('|');
+        let cte, destino, qtdTotal, tipo;
 
-    if (decodedText.startsWith("577")) {
-        tipo = "577";
-        // Remove o 577 e captura apenas os 8 dígitos seguintes
-        cte = decodedText.substring(3, 11); 
-        
-        // Pega a parte 7, e se houver hífens (ex: TRES2-FOR-CNF-BPS), pega só o último (BPS)
-        let destinoBruto = partes[7] || "N/I";
-        let destinoPartes = destinoBruto.split('-');
-        destino = destinoPartes[destinoPartes.length - 1].trim(); 
+        if (decodedText.startsWith("577")) {
+            tipo = "577";
+            cte = decodedText.substring(3, 11); 
+            let destinoBruto = partes[7] || "N/I";
+            let destinoPartes = destinoBruto.split('-');
+            destino = destinoPartes[destinoPartes.length - 1].trim(); 
+            qtdTotal = partes[9] || "0";
+        } else {
+            tipo = "SACO";
+            cte = partes[0];
+            destino = partes[3] || "N/I";
+            qtdTotal = "1";
+        }
 
-        qtdTotal = partes[9] || "0";
-    } else {
-        tipo = "SACO";
-        cte = partes[0];
-        destino = partes[3] || "N/I";
-        qtdTotal = "1";
+        let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes inspecionados?`, "1");
+        if (qtdInspec === null) return;
+
+        enviarParaPlanilha({
+            data: new Date().toLocaleString('pt-BR'),
+            cte: cte, 
+            destino: destino, 
+            qtdTotal: qtdTotal, 
+            qtdInspec: qtdInspec,
+            tipo: tipo, 
+            nome: document.getElementById('nome').value, 
+            re: document.getElementById('re').value,
+            confirmarRepetido: false
+        });
     }
-
-    let qtdInspec = prompt(`CTE: ${cte}\nDestino: ${destino}\nVolumes inspecionados?`, "1");
-    if (qtdInspec === null) return;
-
-    enviarParaPlanilha({
-        data: new Date().toLocaleString('pt-BR'),
-        cte: cte, 
-        destino: destino, 
-        qtdTotal: qtdTotal, 
-        qtdInspec: qtdInspec,
-        tipo: tipo, 
-        nome: document.getElementById('nome').value, 
-        re: document.getElementById('re').value,
-        confirmarRepetido: false
-    });
-}
 
     function confirmarLimpeza() {
         if (confirm("Limpar planilha?")) {
@@ -362,14 +342,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
