@@ -178,20 +178,22 @@
             alert("Preencha Nome e RE primeiro."); return;
         }
         
-        // Instancia o leitor permitindo o uso do detector nativo do celular
         html5QrCode = new Html5Qrcode("reader", {
-            useBarCodeDetectorIfSupported: true, // Usa o leitor nativo do Android/Chrome se houver suporte
+            useBarCodeDetectorIfSupported: true,
             formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
         });
 
+        // Configuração adaptada para não travar o foco em celulares avançados (como a linha Galaxy S)
         const config = {
             fps: 15,
             qrbox: { width: 280, height: 280 },
             aspectRatio: 1.0,
             videoConstraints: {
                 facingMode: "environment",
-                focusMode: "continuous",
-                advanced: [{ focusMode: "continuous" }]
+                // Removemos o bloco "advanced" travado que quebra no S24 
+                // e deixamos o navegador/sistema gerenciar o melhor foco da lente principal
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
             }
         };
 
