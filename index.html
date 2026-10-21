@@ -182,42 +182,57 @@
             formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
         });
 
-        // Configuração otimizada com foco contínuo e resolução maior para leitura a distância
+        // Configuração focada em nitidez e distância ideal
         const config = {
             fps: 20,
-            qrbox: { width: 280, height: 280 },
+            qrbox: { width: 300, height: 300 },
             aspectRatio: 1.0,
             videoConstraints: {
                 facingMode: "environment",
-                width: { ideal: 1920 },
-                height: { ideal: 1080 },
-                // Força o modo de foco contínuo para evitar que a imagem fique embaçada
+                // Força resoluções altas para garantir definição nos pixels do QR Code
+                width: { min: 1280, ideal: 1920, max: 3840 },
+                height: { min: 720, ideal: 1080, max: 2160 },
                 advanced: [{ focusMode: "continuous" }]
             }
         };
 
-        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+        // Tenta abrir a câmera traseira principal de forma inteligente
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            onScanSuccess
+        )
         .then(() => { 
             cameraAtiva = true; 
             document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA"; 
         })
         .catch(err => {
-            console.error("Erro ao iniciar câmera com foco avançado, tentando modo padrão...", err);
+            console.error("Erro com constraints avançadas, tentando modo básico:", err);
             
-            // Fallback caso o celular não suporte o parâmetro advanced de foco
-            html5QrCode.start({ facingMode: "environment" }, {
-                fps: 15,
-                qrbox: { width: 280, height: 280 },
-                videoConstraints: { facingMode: "environment" }
-            }, onScanSuccess).then(() => {
+            // Tentativa de fallback caso o celular bloqueie os parâmetros avançados
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 15, qrbox: { width: 250, height: 250 } }, 
+                onScanSuccess
+            ).then(() => {
                 cameraAtiva = true;
                 document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA";
             }).catch(e => {
-                alert("Não foi possível iniciar a câmera.");
+                alert("Não foi possível acessar a câmera do aparelho.");
             });
         });
     } else { 
-        pararCamera(); 
+        pararManagerOuCamera(); 
+    }
+}
+
+// Pequeno ajuste para garantir a parada limpa
+function pararCamera() {
+    if (html5QrCode && cameraAtiva) {
+        html5QrCode.stop().then(() => { 
+            cameraAtiva = false; 
+            document.getElementById('btnAcao').innerText = "LER QRCODE"; 
+        }).catch(err => console.error("Erro ao parar:", err));
     }
 }
 
