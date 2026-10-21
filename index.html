@@ -170,7 +170,6 @@
     document.getElementById('m-inspec').value = "";
     alternarEntradaManual();
 }
-
     // --- QR CODE ---
     function toggleCamera() {
     if (!cameraAtiva) {
@@ -183,17 +182,17 @@
             formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
         });
 
-        // Configuração adaptada para não travar o foco em celulares avançados (como a linha Galaxy S)
+        // Configuração otimizada com foco contínuo e resolução maior para leitura a distância
         const config = {
-            fps: 15,
+            fps: 20,
             qrbox: { width: 280, height: 280 },
             aspectRatio: 1.0,
             videoConstraints: {
                 facingMode: "environment",
-                // Removemos o bloco "advanced" travado que quebra no S24 
-                // e deixamos o navegador/sistema gerenciar o melhor foco da lente principal
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                // Força o modo de foco contínuo para evitar que a imagem fique embaçada
+                advanced: [{ focusMode: "continuous" }]
             }
         };
 
@@ -203,8 +202,19 @@
             document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA"; 
         })
         .catch(err => {
-            console.error("Erro ao iniciar câmera:", err);
-            alert("Não foi possível iniciar a câmera.");
+            console.error("Erro ao iniciar câmera com foco avançado, tentando modo padrão...", err);
+            
+            // Fallback caso o celular não suporte o parâmetro advanced de foco
+            html5QrCode.start({ facingMode: "environment" }, {
+                fps: 15,
+                qrbox: { width: 280, height: 280 },
+                videoConstraints: { facingMode: "environment" }
+            }, onScanSuccess).then(() => {
+                cameraAtiva = true;
+                document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA";
+            }).catch(e => {
+                alert("Não foi possível iniciar a câmera.");
+            });
         });
     } else { 
         pararCamera(); 
