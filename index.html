@@ -173,34 +173,41 @@
 
     // --- QR CODE ---
     function toggleCamera() {
-        if (!cameraAtiva) {
-            if(!document.getElementById('nome').value || !document.getElementById('re').value) {
-                alert("Preencha Nome e RE primeiro."); return;
-            }
-            html5QrCode = new Html5Qrcode("reader", {
-    formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
-});
-            html5QrCode.start(
-    { facingMode: "environment" }, 
-    {
-        fps: 15,
-        qrbox: { width: 280, height: 280 },
-        // Configurações avançadas para forçar foco e tentar resolver o problema
-        aspectRatio: 1.0,
-        experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-        },
-        videoConstraints: {
-            facingMode: "environment",
-            focusMode: "continuous", // Tenta manter o foco automático contínuo
-            advanced: [{ focusMode: "continuous" }]
+    if (!cameraAtiva) {
+        if(!document.getElementById('nome').value || !document.getElementById('re').value) {
+            alert("Preencha Nome e RE primeiro."); return;
         }
-    }, 
-    onScanSuccess
-)
-            .then(() => { cameraAtiva = true; document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA"; });
-        } else { pararCamera(); }
+        
+        // Instancia o leitor permitindo o uso do detector nativo do celular
+        html5QrCode = new Html5Qrcode("reader", {
+            useBarCodeDetectorIfSupported: true, // Usa o leitor nativo do Android/Chrome se houver suporte
+            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+        });
+
+        const config = {
+            fps: 15,
+            qrbox: { width: 280, height: 280 },
+            aspectRatio: 1.0,
+            videoConstraints: {
+                facingMode: "environment",
+                focusMode: "continuous",
+                advanced: [{ focusMode: "continuous" }]
+            }
+        };
+
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+        .then(() => { 
+            cameraAtiva = true; 
+            document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA"; 
+        })
+        .catch(err => {
+            console.error("Erro ao iniciar câmera:", err);
+            alert("Não foi possível iniciar a câmera.");
+        });
+    } else { 
+        pararCamera(); 
     }
+}
 
     function pararCamera() {
         if (html5QrCode) {
