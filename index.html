@@ -171,7 +171,6 @@
     alternarEntradaManual();
 }
     // --- QR CODE ---
-    // --- QR CODE ---
     function toggleCamera() {
     if (!cameraAtiva) {
         if(!document.getElementById('nome').value || !document.getElementById('re').value) {
@@ -195,7 +194,7 @@
                 advanced: [
                     { focusMode: "continuous" },
                     // Força um zoom inicial de 2x para aproximar a etiqueta automaticamente
-                    { zoom: 2.0 } 
+                    { zoom: 5.0 } 
                 ]
             }
         };
