@@ -171,6 +171,7 @@
     alternarEntradaManual();
 }
     // --- QR CODE ---
+    // --- QR CODE ---
     function toggleCamera() {
     if (!cameraAtiva) {
         if(!document.getElementById('nome').value || !document.getElementById('re').value) {
@@ -182,57 +183,45 @@
             formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
         });
 
-        // Configuração focada em nitidez e distância ideal
+        // Configuração com zoom e foco para leitura a distância
         const config = {
             fps: 20,
-            qrbox: { width: 300, height: 300 },
+            qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0,
             videoConstraints: {
                 facingMode: "environment",
-                // Força resoluções altas para garantir definição nos pixels do QR Code
-                width: { min: 1280, ideal: 1920, max: 3840 },
-                height: { min: 720, ideal: 1080, max: 2160 },
-                advanced: [{ focusMode: "continuous" }]
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                advanced: [
+                    { focusMode: "continuous" },
+                    // Força um zoom inicial de 2x para aproximar a etiqueta automaticamente
+                    { zoom: 2.0 } 
+                ]
             }
         };
 
-        // Tenta abrir a câmera traseira principal de forma inteligente
-        html5QrCode.start(
-            { facingMode: "environment" }, 
-            config, 
-            onScanSuccess
-        )
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
         .then(() => { 
             cameraAtiva = true; 
             document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA"; 
         })
         .catch(err => {
-            console.error("Erro com constraints avançadas, tentando modo básico:", err);
+            console.warn("Zoom avançado não suportado, tentando modo padrão...", err);
             
-            // Tentativa de fallback caso o celular bloqueie os parâmetros avançados
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                { fps: 15, qrbox: { width: 250, height: 250 } }, 
-                onScanSuccess
-            ).then(() => {
+            // Fallback caso o celular não aceite o parâmetro de zoom via web
+            html5QrCode.start({ facingMode: "environment" }, {
+                fps: 15,
+                qrbox: { width: 280, height: 280 },
+                videoConstraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+            }, onScanSuccess).then(() => {
                 cameraAtiva = true;
                 document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA";
             }).catch(e => {
-                alert("Não foi possível acessar a câmera do aparelho.");
+                alert("Não foi possível iniciar a câmera.");
             });
         });
     } else { 
-        pararManagerOuCamera(); 
-    }
-}
-
-// Pequeno ajuste para garantir a parada limpa
-function pararCamera() {
-    if (html5QrCode && cameraAtiva) {
-        html5QrCode.stop().then(() => { 
-            cameraAtiva = false; 
-            document.getElementById('btnAcao').innerText = "LER QRCODE"; 
-        }).catch(err => console.error("Erro ao parar:", err));
+        pararCamera(); 
     }
 }
 
