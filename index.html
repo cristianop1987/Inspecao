@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#003399">
     <link rel="icon" type="image/jpeg" href="x-ray.png">
     <title>Scanner F-CGO-004 - Azul Cargo</title>
-    <script src="https://unpkg.com/html5-qrcode?v=2"></script>
+    <script src="https://unpkg.com/html5-qrcode?v=5"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 15px; background-color: #f0f2f5; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 450px; margin: auto; }
@@ -22,7 +22,11 @@
         .btn-limpar { background-color: #f0ad4e; color: white; }
         .btn-limpar:disabled { background-color: #cccccc; cursor: not-allowed; opacity: 0.7; }
         #status { margin-top: 15px; font-weight: bold; min-height: 20px; }
-        #reader, #reader video { touch-action: none; }
+        #reader { overflow: hidden; position: relative; }
+        #reader video { touch-action: none; object-fit: cover; }
+        /* Mantém a área da câmera estável em celulares com proporções diferentes. */
+        #reader__scan_region { min-height: 240px; }
+
     </style>
 </head>
 <body>
@@ -174,20 +178,75 @@
 
     async function prepararZoomManual() {
         zoomDisponivel = false;
+        if (!html5QrCode || !cameraAtiva) return;
+
         try {
             const caps = html5QrCode.getRunningTrackCapabilities();
-            const z = caps && caps.zoom;
-            await html5QrCode.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
-            if (z && typeof z.min === 'number' && typeof z.max === 'number' && z.max > z.min) {
-                zoomMin = z.min;
-                zoomMax = z.max;
-                zoomStep = Number(z.step) || Math.max(0.1, (zoomMax - zoomMin) / 100);
-                zoomAtual = Math.max(zoomMin, Math.min(zoomMax, Number(z.min) || 1));
+            const zoom = caps && caps.zoom;
+
+            // Solicita foco contínuo quando o navegador/celular oferece esse recurso.
+            try {
+                await html5QrCode.applyVideoConstraints({
+                    advanced: [{ focusMode: 'continuous' }]
+                });
+            } catch (_) {
+                // Alguns aparelhos não expõem focusMode pela câmera web.
+            }
+
+            if (zoom && typeof zoom.min === 'number' &&
+                typeof zoom.max === 'number' && zoom.max > zoom.min) {
+                zoomMin = zoom.min;
+                zoomMax = zoom.max;
+                zoomStep = Number(zoom.step) || Math.max(0.1, (zoomMax - zoomMin) / 100);
+
+                // Inicia com aproximação moderada para etiquetas: tenta 2x,
+                // respeitando os limites reais informados pelo aparelho.
+                // Se o celular não alcançar 2x, usa um valor proporcional disponível.
+                const settings = html5QrCode.getRunningTrackSettings
+                    ? html5QrCode.getRunningTrackSettings()
+                    : {};
+                const zoomAtualCamera = settings && typeof settings.zoom === 'number'
+                    ? settings.zoom : zoomMin;
+                const zoomInicialDesejado = Math.max(2, zoomMin + (zoomMax - zoomMin) * 0.20);
+                zoomAtual = Math.max(zoomMin, Math.min(zoomMax,
+                    Math.max(zoomAtualCamera, zoomInicialDesejado)));
                 zoomDisponivel = true;
-                await html5QrCode.applyVideoConstraints({ advanced: [{ zoom: zoomAtual }] });
+
+                // Aplica o zoom inicial e mantém a pinça disponível para ajustar.
+                const aplicado = await aplicarZoomNativo(zoomAtual);
+                if (!aplicado) {
+                    zoomAtual = zoomAtualCamera;
+                    zoomDisponivel = false;
+                }
+            } else {
+                // O zoom nativo não é disponibilizado por todos os navegadores.
+                zoomMin = 1;
+                zoomMax = 1;
+                zoomAtual = 1;
             }
         } catch (e) {
             zoomDisponivel = false;
+            console.debug('Controles avançados da câmera indisponíveis:', e);
+        }
+    }
+
+    async function aplicarZoomNativo(valor) {
+        if (!html5QrCode) return false;
+
+        // Tenta os dois formatos usados pelos navegadores para aplicar zoom.
+        try {
+            await html5QrCode.applyVideoConstraints({
+                advanced: [{ zoom: valor }]
+            });
+            return true;
+        } catch (_) {
+            try {
+                await html5QrCode.applyVideoConstraints({ zoom: valor });
+                return true;
+            } catch (e) {
+                console.debug('Zoom nativo não aceito pela câmera:', e);
+                return false;
+            }
         }
     }
 
@@ -220,12 +279,12 @@
                 novoZoom = Math.round(novoZoom / zoomStep) * zoomStep;
                 novoZoom = Math.max(zoomMin, Math.min(zoomMax, Number(novoZoom.toFixed(2))));
                 if (Math.abs(novoZoom - zoomAtual) < zoomStep || Date.now() - ultimoZoomAplicado < 90) return;
-                zoomAtual = novoZoom;
+
                 ultimoZoomAplicado = Date.now();
                 aplicandoZoom = true;
-                html5QrCode.applyVideoConstraints({ advanced: [{ zoom: zoomAtual }] })
-                    .catch(() => {})
-                    .finally(() => { aplicandoZoom = false; });
+                aplicarZoomNativo(novoZoom).then(aplicado => {
+                    if (aplicado) zoomAtual = novoZoom;
+                }).finally(() => { aplicandoZoom = false; });
             }, { passive: false });
 
             const encerrarPinch = () => { distanciaInicialPinch = 0; };
@@ -248,13 +307,17 @@
             // Configuração com qrbox seguro em pixels fixos para evitar erros de cálculo
             const config = {
                 fps: 20,
-                qrbox: { width: 260, height: 260 },
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    // Caixa responsiva: não excede a imagem disponível no E13 nem no A23.
+                    const lado = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.78);
+                    return { width: Math.max(180, lado), height: Math.max(180, lado) };
+                },
                 aspectRatio: 1.0,
+                disableFlip: true,
                 videoConstraints: {
                     facingMode: "environment",
                     width: { ideal: 1920 },
-                    height: { ideal: 1080 },
-                    advanced: [{ focusMode: "continuous" }]
+                    height: { ideal: 1080 }
                 }
             };
 
@@ -262,18 +325,22 @@
             .then(() => { 
                 cameraAtiva = true; 
                 document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA"; 
-                setTimeout(prepararZoomManual, 350);
+                setTimeout(prepararZoomManual, 700);
             })
             .catch(err => {
                 console.warn("Tentando modo alternativo de câmera...", err);
                 html5QrCode.start({ facingMode: "environment" }, {
                     fps: 15,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
+                    qrbox: (viewfinderWidth, viewfinderHeight) => {
+                        const lado = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.75);
+                        return { width: Math.max(180, lado), height: Math.max(180, lado) };
+                    },
+                    aspectRatio: 1.0,
+                    disableFlip: true
                 }, onScanSuccess).then(() => {
                     cameraAtiva = true;
                     document.getElementById('btnAcao').innerText = "DESLIGAR CÂMERA";
-                    setTimeout(prepararZoomManual, 350);
+                    setTimeout(prepararZoomManual, 700);
                 }).catch(e => {
                     alert("Não foi possível iniciar a câmera.");
                 });
